@@ -1,5 +1,5 @@
-CXXFLAGS+=-Wall -MD -ggdb
-LDFLAGS=-lGL -lGLU -lglut
+CXXFLAGS := -Wall -MD -ggdb $(shell sdl-config --cflags)
+LDFLAGS := $(shell sdl-config --libs)
 
 game: main.o
 	$(LINK.cc) $^ -o $@

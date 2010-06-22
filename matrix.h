@@ -1,6 +1,8 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#include "vec.h"
+
 #define matrix_for_each(j, i)                   \
     for (int j = 0; j < NJ; j++)                \
         for (int i = 0; i < NI; i++)
@@ -101,70 +103,17 @@ Matrix<LR, RC, T> operator * (const Matrix<LR, LC, T> &ml,
     return n;
 }
 
-template <int LR, int LC, int RC, typename T>
-void operator *= (Matrix<LR, LC, T> &ml,
-                  const Matrix<LC, RC, T> &mr)
+template <int LR, int LC, typename T>
+vec<LC, T> operator * (const Matrix<LR, LC, T> &ml,
+                       const vec<LC, T> &vr)
 {
-    ml = ml*mr;
-}
+    vec<LC, T> n;
 
-template <typename T>
-class Transform : public Matrix<4, 4, T>
-{
-    typedef Matrix<4, 4, T> m_t;
-public:
-    Transform()
-    {
-        m_t::load_identity();
-    }
+    for (int i = 0; i < LR; i++)
+        for (int s = 0; s < LR; s++)
+            n[i] += ml(s, i)*vr[s];
 
-    Transform& scale(T sx, T sy, T sz)
-    {
-        m_t m;
-        m(0, 0) = sx;
-        m(1, 1) = sy;
-        m(2, 2) = sz;
-        m(3, 3) = 1;
-
-        *this *= m;
-        return *this;
-    }
-
-    Transform& translate(T tx, T ty, T tz)
-    {
-        m_t m;
-        m.load_identity();
-        m(3, 0) = tx;
-        m(3, 1) = ty;
-        m(3, 2) = tz;
-
-        *this *= m;
-        return *this;
-    }
-
-    Transform& rotate(T a, T x, T y, T z)
-    {
-        return *this;
-    }
-};
-
-void matrix_test()
-{
-    Matrix<4, 6> a;
-
-    int cnt = 0;
-    for (int j = 0; j < 6; j++) {
-        for (int i = 0; i < 3; i++)
-            a(j, i) = cnt++;
-        a(j, 3) = 1;
-    }
-
-    Transform<float> b;
-    b.scale(1, 2, 3).translate(10, 10, 0);
-
-    Matrix<4, 6> c = b*a;
-
-    c.print();
+    return n;
 }
 
 #endif

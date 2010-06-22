@@ -4,187 +4,82 @@
 #include <cstring>
 #include <ctime>
 #include <vector>
-#include <GL/glut.h>
 #include <sys/time.h>
-#include "vec.h"
-#include "matrix.h"
+#include "transform.h"
+#include "SDL.h"
 
-struct Particle {
-    vec3f pos;
-    vec3f vel;
-};
-
-time_t time_ms()
+class Renderer
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return tv.tv_sec*1000+tv.tv_usec/1000;
-}
-
-class ParticleSystem {
-    std::vector<Particle> particles;
-    time_t update_time;
-    float mx, my;
-    int w, h;
-
+    SDL_Surface *m_screen;
+    std::vector<vec4f> dots;
+    Transform<float> m_trans;
 public:
-    ParticleSystem()
-        : particles(60)
-        , update_time(time_ms())
+    Renderer(SDL_Surface *screen)
+        : m_screen(screen)
     {
-    }
+        float sx = m_screen->w/2;
+        float sy = m_screen->h/2;
 
-    void boom()
-    {
-        int size = particles.size();
-        int half = size/2;
-        float speed = 0.4;
+        m_trans.rotate(2, 1, 1, 1);
 
-        for (int i = 0; i < half; i++)
-        {
-            float a = (2*M_PI/half)*i;
-            vec3f disp(cos(a), sin(a), 0);
-            particles[i].vel += disp*speed;
-        }
-        for (int i = 0; i < half; i++) {
-            float a = (2*M_PI/half)*i;
-            vec3f disp(0, sin(a), cos(a));
-            particles[half+i].vel += disp*speed;
-        }
-    }
+        // Camera
+        //m_trans.translate(0, 0, 1);
 
-    void reshape(int nw, int nh)
-    {
-        w = nw;
-        h = nh;
-    }
+        // Apply viewport
+        m_trans.translate(1, 1, 0).scale(sx, sy, 1);
 
-    void move(int x, int y)
-    {
-        mx = ((float)x/w*2)-1;
-        my = 1-((float)y/h*2);
+        dots.push_back(vec4f(-0.5, -0.5, 0, 1));
+        dots.push_back(vec4f(0.5, -0.5, 0, 1));
+        dots.push_back(vec4f(0.5, 0.5, 0, 1));
+        dots.push_back(vec4f(-0.5, 0.5, 0, 1));
     }
 
     void render()
     {
-        int s = particles.size();
-        GLfloat points[s][3];
-        for (int i = 0; i < s; i++)
+        SDL_PixelFormat *format = m_screen->format;
+        int bpp = format->BytesPerPixel;
+        int pitch = m_screen->pitch;
+
+#define RGB(r, g, b) (r << format->Rshift | g << format->Gshift | b << format->Bshift)
+
+        SDL_LockSurface(m_screen);
+
+        uint8_t *pixels = (uint8_t*)m_screen->pixels;
+        for (unsigned i = 0; i < dots.size(); i++)
         {
-            points[i][0] = particles[i].pos[0];
-            points[i][1] = particles[i].pos[1];
-            points[i][2] = particles[i].pos[2];
+            vec4f dot = m_trans * dots[i];
+            uint32_t *p = (uint32_t*)(pixels+(int)dot.y()*pitch+(int)dot.x()*bpp);
+            *p = RGB(0xFF, 0x00, 0x00);
         }
 
-        glPointSize(5);
-        glVertexPointer(3, GL_FLOAT, 0, points);
-        glDrawArrays(GL_POINTS, 0, s);
-    }
-
-    void update()
-    {
-        time_t cur_time = time_ms();
-        float dt = (float)(cur_time-update_time)/1000;
-        update_time = cur_time;
-
-        int s = particles.size();
-        for (int i = 0; i < s; i++)
-        {
-            float speed = 0.5;
-            vec3f disp(mx, my, 0);
-            disp -= particles[i].pos;
-            if (disp[0] || disp[1])
-                disp.normalize();
-            particles[i].vel += disp*speed*dt;
-
-            particles[i].pos += particles[i].vel*dt;
-        }
+        SDL_UnlockSurface(m_screen);
+        SDL_Flip(m_screen);
     }
 };
 
-ParticleSystem ps;
-
-void display()
-{
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-	glLoadIdentity();
-    //glRotatef(20, 0, 1, 1);
-
-    ps.render();
-
-	glutSwapBuffers();
-}
-
-void tick(int data)
-{
-    ps.update();
-	glutPostRedisplay();
-
-	glutTimerFunc(50, tick, 0);
-}
-
-void init(void)
-{
-	glEnable(GL_DEPTH_TEST);
-    glEnableClientState(GL_VERTEX_ARRAY);
-}
-
-void motion(int x, int y)
-{
-    ps.move(x, y);
-}
-
-void reshape(int w, int h)
-{
-    glViewport(0, 0, w, h);
-    ps.reshape(w, h);
-}
-
-void click(int button, int state, int x, int y)
-{
-    ps.boom();
-}
-
-void vec_test()
-{
-#define ASSERT(e) printf("%-40s = %s\n", #e, (e) ? "ok" : "fail");
-    vec2f a(1, 2);
-    vec2f b(2, 4);
-    vec2f c(1, 2);
-    vec2f d(-1, -2);
-
-    ASSERT(a != b);
-    ASSERT(a == c);
-    ASSERT(a+c == b);
-    ASSERT(d == -a);
-    ASSERT(a*2 == b);
-    ASSERT(b/2 == a);
-    ASSERT(a[0] == 1 && a[1] == 2);
-    ASSERT(a[0] == a.x() && a[1] == a.y());
-    ASSERT(b.length() != 0);
-    ASSERT(b.normalized() < vec2f(1, 1));
-    ASSERT(dot(a, b) == 10);
-
-#undef ASSERT
-}
-
 int main(int argc, char **argv)
 {
-    matrix_test();
-    return 0;
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGBA|GLUT_DEPTH);
-	glutInitWindowSize(600, 600);
-	glutCreateWindow("simple");
+    SDL_Init(SDL_INIT_VIDEO);
 
-    glutMouseFunc(click);
-    glutReshapeFunc(reshape);
-    glutPassiveMotionFunc(motion);
-	glutDisplayFunc(display);
-	glutTimerFunc(50, tick, 0);
+    SDL_Surface *screen = SDL_SetVideoMode(640, 480, 24, SDL_HWSURFACE|SDL_DOUBLEBUF);
+    Renderer r(screen);
+    r.render();
 
-	init();
+    bool run = true;
+    while (run)
+    {
+        SDL_Event event;
+        SDL_WaitEvent(&event);
+        switch (event.type)
+        {
+        case SDL_QUIT:
+            run = false;
+            break;
+        default:
+            continue;
+        }
+    }
 
-	glutMainLoop();
+    SDL_Quit();
 	return 0;
 }
