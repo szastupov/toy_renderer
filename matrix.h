@@ -4,10 +4,10 @@
 #include "vec.h"
 
 #define matrix_for_each(j, i)                   \
-    for (int j = 0; j < NJ; j++)                \
-        for (int i = 0; i < NI; i++)
+    for (size_t j = 0; j < NJ; j++)                \
+        for (size_t i = 0; i < NI; i++)
 
-template <int NI = 4, int NJ = 4, typename T = float>
+template <size_t NI = 4, size_t NJ = 4, typename T = float>
 class Matrix
 {
     T p[NJ][NI];
@@ -29,21 +29,21 @@ public:
             p[j][i] = m(j, i);
     }
 
-    T operator () (int j, int i) const
+    T operator () (size_t j, size_t i) const
     {
         return p[j][i];
     }
 
-    T& operator () (int j, int i)
+    T& operator () (size_t j, size_t i)
     {
         return p[j][i];
     }
 
     void print()
     {
-        for (int i = 0; i < NI; i++)
+        for (size_t i = 0; i < NI; i++)
         {
-            for (int j = 0; j < NJ; j++)
+            for (size_t j = 0; j < NJ; j++)
                 printf("%f ", p[j][i]);
             printf("\n");
         }
@@ -84,33 +84,33 @@ public:
     void load_identity()
     {
         assert(NJ == NI);
-        for (int j = 0; j < NJ; j++)
+        for (size_t j = 0; j < NJ; j++)
             p[j][j] = 1;
     }
 };
 
-template <int LR, int LC, int RC, typename T>
+template <size_t LR, size_t LC, size_t RC, typename T>
 Matrix<LR, RC, T> operator * (const Matrix<LR, LC, T> &ml,
                               const Matrix<LC, RC, T> &mr)
 {
     Matrix<LR, RC, T> n;
 
-    for (int j = 0; j < RC; j++)
-        for (int i = 0; i < LR; i++)
-            for (int s = 0; s < LR; s++)
+    for (size_t j = 0; j < RC; j++)
+        for (size_t i = 0; i < LR; i++)
+            for (size_t s = 0; s < LR; s++)
                 n(j, i) += ml(s, i)*mr(j, s);
 
     return n;
 }
 
-template <int LR, int LC, typename T>
+template <size_t LR, size_t LC, typename T>
 vec<LC, T> operator * (const Matrix<LR, LC, T> &ml,
                        const vec<LC, T> &vr)
 {
     vec<LC, T> n;
 
-    for (int i = 0; i < LR; i++)
-        for (int s = 0; s < LR; s++)
+    for (size_t i = 0; i < LR; i++)
+        for (size_t s = 0; s < LR; s++)
             n[i] += ml(s, i)*vr[s];
 
     return n;

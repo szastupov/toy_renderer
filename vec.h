@@ -11,9 +11,9 @@
 #include <cmath>
 #include <cassert>
 
-#define vec_for_each(v) for (int v = 0; v < N; v++)
+#define vec_for_each(v) for (size_t v = 0; v < N; v++)
 
-template <int N = 2, typename T = float>
+template <size_t N = 2, typename T = float>
 class vec
 {
 	T p[N];
@@ -57,12 +57,12 @@ public:
 	T z() const { return p[2]; }
     T w() const { return p[3]; }
 
-    T operator [](int i) const
+    T operator [](size_t i) const
     {
         return p[i];
     }
 
-    T& operator [](int i)
+    T& operator [](size_t i)
     {
         return p[i];
     }
@@ -143,7 +143,7 @@ public:
 #undef SCALAR_OP
 #undef VEC_OP
 
-template <int N, typename T>
+template <size_t N, typename T>
 static T dot(const vec<N, T> &a, const vec<N, T> &b)
 {
 	T sum = 0;
@@ -151,7 +151,7 @@ static T dot(const vec<N, T> &a, const vec<N, T> &b)
 	return sum;
 }
 
-template <int N, typename T>
+template <size_t N, typename T>
 static T distance(const vec<N, T> &a, const vec<N, T> &b)
 {
 	vec<N, T> c = a-b;
