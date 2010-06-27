@@ -12,7 +12,8 @@ class Renderer
 {
     SDL_Surface *m_screen;
     std::vector<vec4f> dots;
-    Transform<float> m_trans;
+    Matrix4f m_viewport;
+    Matrix4f m_model;
 public:
     Renderer(SDL_Surface *screen)
         : m_screen(screen)
@@ -20,41 +21,53 @@ public:
         float sx = m_screen->w/2;
         float sy = m_screen->h/2;
 
-        m_trans.rotate(2, 1, 1, 1);
+        m_viewport = scale(sx, -sy, 1.0f) * translate(1.0f, -1.0f, 0.0f);
+        m_model = rotate(0.5f, 0.f, 1.f, 1.f);
 
-        // Camera
-        //m_trans.translate(0, 0, 1);
+        // Example data
+        float pp[][3] = {
+            {-0.5, -0.5, 0},
+            {0, 0.5, 0},
+            {0.5, -0.5, 0},
 
-        // Apply viewport
-        m_trans.translate(1, 1, 0).scale(sx, sy, 1);
-
-        dots.push_back(vec4f(-0.5, -0.5, 0, 1));
-        dots.push_back(vec4f(0.5, -0.5, 0, 1));
-        dots.push_back(vec4f(0.5, 0.5, 0, 1));
-        dots.push_back(vec4f(-0.5, 0.5, 0, 1));
+            {-0.5, -0.5, -1},
+            {0, 0.5, -1},
+            {0.5, -0.5, -1},
+        };
+        for (int i = 0; i < 6; i++)
+            dots.push_back(vec4f(pp[i][0], pp[i][1], pp[i][2], 1));
     }
 
     void render()
     {
-        SDL_PixelFormat *format = m_screen->format;
-        int bpp = format->BytesPerPixel;
-        int pitch = m_screen->pitch;
-
-#define RGB(r, g, b) (r << format->Rshift | g << format->Gshift | b << format->Bshift)
+        Matrix4f trans = m_viewport * m_model;
 
         SDL_LockSurface(m_screen);
 
-        uint8_t *pixels = (uint8_t*)m_screen->pixels;
         for (unsigned i = 0; i < dots.size(); i++)
         {
-            vec4f dot = m_trans * dots[i];
-            uint32_t *p = (uint32_t*)(pixels+(int)dot.y()*pitch+(int)dot.x()*bpp);
-            *p = RGB(0xFF, 0x00, 0x00);
+            vec4f dot = trans * dots[i];
+            printf("dot %f, %f, %f\n", dot.x(), dot.y(), dot.z());
+            if (dot.x() < 0 || dot.x() > m_screen->w ||
+                dot.y() < 0 || dot.y() > m_screen->h)
+                continue;
+            setPixel(dot.x(), dot.y(), 0xFF, 0x00, 0x00);
         }
 
         SDL_UnlockSurface(m_screen);
         SDL_Flip(m_screen);
     }
+
+    inline void setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_t b)
+    {
+        SDL_PixelFormat *format = m_screen->format;
+        int bpp = format->BytesPerPixel;
+        int pitch = m_screen->pitch;
+        uint8_t *pixels = (uint8_t*)m_screen->pixels + y*pitch + x*bpp;
+
+        *(uint32_t*)pixels = r << format->Rshift | g << format->Gshift | b << format->Bshift;
+    }
+
 };
 
 int main(int argc, char **argv)

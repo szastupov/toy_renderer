@@ -1,7 +1,7 @@
 CXXFLAGS := -Wall -MD -ggdb $(shell sdl-config --cflags)
 LDFLAGS := $(shell sdl-config --libs)
 
-game: main.o
+game: main.o transform.o
 	$(LINK.cc) $^ -o $@
 
 clean:

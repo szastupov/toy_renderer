@@ -18,7 +18,12 @@ class vec
 {
 	T p[N];
 public:
-    vec()
+    vec(T v = 0)
+    {
+        assign(v);
+    }
+
+    void assign(T v)
     {
         vec_for_each(i) p[i] = 0;
     }
