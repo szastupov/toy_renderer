@@ -117,9 +117,11 @@ Matrix<LR, RC, T> operator * (const Matrix<LR, LC, T> &ml,
     Matrix<LR, RC, T> n;
 
     for (size_t j = 0; j < RC; j++)
-        for (size_t i = 0; i < LR; i++)
+        for (size_t i = 0; i < LR; i++) {
+            n[j][i] = 0;
             for (size_t s = 0; s < LR; s++)
                 n[j][i] += ml[s][i]*mr[j][s];
+        }
 
     return n;
 }

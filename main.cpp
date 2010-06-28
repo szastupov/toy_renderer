@@ -22,32 +22,30 @@ public:
         float sy = m_screen->h/2;
 
         m_viewport = scale(sx, -sy, 1.0f) * translate(1.0f, -1.0f, 0.0f);
-        m_model = rotate(0.5f, 0.f, 1.f, 1.f);
+        m_model = rotate(1.f, 1.f, 0.f, 0.f);
 
         // Example data
         float pp[][3] = {
             {-0.5, -0.5, 0},
-            {0, 0.5, 0},
-            {0.5, -0.5, 0},
-
-            {-0.5, -0.5, -1},
-            {0, 0.5, -1},
-            {0.5, -0.5, -1},
+            {-0.5, 0.5, 0},
+            {0.5, 0.5, 0},
+            {0.5, -0.5, 0}
         };
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < 4; i++)
             dots.push_back(vec4f(pp[i][0], pp[i][1], pp[i][2], 1));
     }
 
     void render()
     {
         Matrix4f trans = m_viewport * m_model;
+        trans.print();
 
         SDL_LockSurface(m_screen);
 
         for (unsigned i = 0; i < dots.size(); i++)
         {
             vec4f dot = trans * dots[i];
-            printf("dot %f, %f, %f\n", dot.x(), dot.y(), dot.z());
+            printf("dot %f, %f, %f, %f\n", dot.x(), dot.y(), dot.z(), dot.w());
             if (dot.x() < 0 || dot.x() > m_screen->w ||
                 dot.y() < 0 || dot.y() > m_screen->h)
                 continue;
