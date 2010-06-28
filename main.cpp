@@ -37,14 +37,17 @@ public:
 
     void render()
     {
-        Matrix4f trans = m_viewport * m_model;
-        trans.print();
+        Matrix4f proj;
+        proj[2][3] = 1;
+        proj[3][3] = 0;
+        Matrix4f trans = m_viewport * proj * translate(0.f, 0.f, 1.f) * m_model;
 
         SDL_LockSurface(m_screen);
 
         for (unsigned i = 0; i < dots.size(); i++)
         {
             vec4f dot = trans * dots[i];
+            dot = dot/dot.w();
             printf("dot %f, %f, %f, %f\n", dot.x(), dot.y(), dot.z(), dot.w());
             if (dot.x() < 0 || dot.x() > m_screen->w ||
                 dot.y() < 0 || dot.y() > m_screen->h)
