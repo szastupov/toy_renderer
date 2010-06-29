@@ -175,6 +175,7 @@ static T det(const vec<2, T> &a, const vec<2, T> &b)
 typedef vec<2, float> vec2f;
 typedef vec<3, float> vec3f;
 typedef vec<4, float> vec4f;
+typedef vec<2, int> vec2i;
 
 #ifdef VEC_TEST
 static void vec_test()

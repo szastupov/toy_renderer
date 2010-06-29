@@ -59,8 +59,7 @@ public:
 
     void print()
     {
-        for (size_t i = 0; i < NI; i++)
-        {
+        for (size_t i = 0; i < NI; i++) {
             for (size_t j = 0; j < NJ; j++)
                 printf("%f ", p[j][i]);
             printf("\n");
@@ -102,8 +101,7 @@ public:
     void loadIdentity()
     {
         assert(NJ == NI);
-        matrix_for_each(j)
-        {
+        matrix_for_each(j) {
             p[j].assign(0);
             p[j][j] = 1;
         }
