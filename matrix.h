@@ -24,6 +24,7 @@ public:
     }
 
     template <size_t SI, size_t SJ>
+    explicit
     Matrix(const Matrix<SI, SJ, T> &s)
     {
         assert(NI >= SI);
@@ -39,12 +40,6 @@ public:
     {
         matrix_for_each(j)
             p[j] = src[j];
-    }
-
-    void operator = (const Matrix &m)
-    {
-        matrix_for_each(j)
-            p[j] = m[j];
     }
 
     vec_t& operator [] (size_t j)
@@ -138,8 +133,8 @@ vec<LC, T> operator * (const Matrix<LR, LC, T> &ml,
 }
 
 template <size_t N, typename T>
-Matrix<N, N, T> outer(const vec<N, T> u,
-                      const vec<N, T> v)
+Matrix<N, N, T> outer(const vec<N, T> &u,
+                      const vec<N, T> &v)
 {
     Matrix<N, N, T> n;
 

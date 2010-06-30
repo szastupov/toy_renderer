@@ -1,3 +1,6 @@
+#ifndef VEC_H
+#define VEC_H
+
 /*
  * ----------------------------------------------------------------------------
  * "THE BEER-WARE LICENSE" (Revision 42):
@@ -56,6 +59,14 @@ public:
 	{
         vec_for_each(i) p[i] = src[i];
 	}
+
+    template <size_t SN, typename ST>
+    vec(const vec<SN, ST>& src)
+    {
+        int n = SN < N ? SN : N;
+        for (int i = 0; i < n; i++)
+            p[i] = (T)src[i];
+    }
 
 	T x() const { return p[0]; }
 	T y() const { return p[1]; }
@@ -127,7 +138,7 @@ public:
 	SCALAR_OP(/)
 
 #define CMP(op)									\
-	bool operator op (const vec &b)				\
+	bool operator op (const vec &b) const       \
 	{											\
         vec_for_each(i) {                       \
             if (!(p[i] op b[i]))                \
@@ -200,4 +211,6 @@ static void vec_test()
 
 #undef ASSERT
 }
+#endif
+
 #endif
