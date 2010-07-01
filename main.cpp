@@ -9,22 +9,19 @@
 #include "transform.h"
 #include "canvas.h"
 
-typedef std::vector<vec4f> VertexArray;
 typedef enum { TRIANGLE_STRIP, LINE_STRIP, LINE_LOOP, POINTS } prim_t;
 
 class Renderer {
-    SDL_Surface *m_screen;
-    const VertexArray *m_vertices;
+    std::vector<vec4f> m_vertices;
     Matrix4f m_viewport;
     Matrix4f m_model;
     Matrix4f m_trans;
-    Canvas m_canvas;
+    Canvas &m_canvas;
 
     void drawPoints()
     {
-        const VertexArray &dots = *m_vertices;
-        for (unsigned i = 0; i < dots.size(); i++) {
-            vec4f dot = m_trans * dots[i];
+        for (unsigned i = 0; i < m_vertices.size(); i++) {
+            vec4f dot = m_trans * m_vertices[i];
             dot = dot/dot.w();
             m_canvas.plot(dot.x(), dot.y());
         }
@@ -32,11 +29,10 @@ class Renderer {
 
     void drawLines(bool loop = true)
     {
-        const VertexArray &dots = *m_vertices;
         vec2i p0, p1, p2;
 
-        for (unsigned i = 0; i < dots.size(); i++) {
-            vec4f dot = m_trans * dots[i];
+        for (unsigned i = 0; i < m_vertices.size(); i++) {
+            vec4f dot = m_trans * m_vertices[i];
             dot = dot/dot.w();
 
             if (i == 0) {
@@ -48,21 +44,20 @@ class Renderer {
             m_canvas.line(p1.x(), p1.y(), p2.x(), p2.y());
             p1 = p2;
 
-            if (loop && (i+1 == dots.size()))
+            if (loop && (i+1 == m_vertices.size()))
                 m_canvas.line(p1.x(), p1.y(), p0.x(), p0.y());
         }
     }
 
     void drawTriangleStrip()
     {
-        const VertexArray &dots = *m_vertices;
         vec2i v[3];
 
         for (unsigned i = 0, step = 0;
-             i < dots.size();
+             i < m_vertices.size();
              i++, step++)
         {
-            vec4f dot = m_trans * dots[i];
+            vec4f dot = m_trans * m_vertices[i];
             dot = dot/dot.w();
 
             v[step] = dot;
@@ -77,12 +72,11 @@ class Renderer {
     }
 
 public:
-    Renderer(SDL_Surface *screen)
-        : m_screen(screen)
-        , m_canvas(screen)
+    Renderer(Canvas &canvas)
+        : m_canvas(canvas)
     {
-        float sx = m_screen->w/2;
-        float sy = m_screen->h/2;
+        float sx = m_canvas.width()/2;
+        float sy = m_canvas.height()/2;
 
         m_viewport = scale(sx, -sy, 1.0f) * translate(1.0f, -1.0f, 0.0f);
     }
@@ -92,9 +86,11 @@ public:
         m_model = m * m_model;
     }
 
-    void vertexPointer(const VertexArray *vp)
+    void vertexPointer(const float pp[][3])
     {
-        m_vertices = vp;
+        m_vertices.clear();
+        for (int i = 0; i < 4; i++)
+            m_vertices.push_back(vec4f(pp[i][0], pp[i][1], pp[i][2], 1));
     }
 
     void render(prim_t mode)
@@ -104,8 +100,7 @@ public:
         proj[3][3] = 0;
         m_trans = m_viewport * proj * translate(0.f, 0.f, 1.f) * m_model;
 
-        SDL_LockSurface(m_screen);
-
+        m_canvas.lock();
         switch (mode) {
         case TRIANGLE_STRIP:
             drawTriangleStrip();
@@ -120,9 +115,12 @@ public:
             drawPoints();
             break;
         }
+        m_canvas.unlock();
+    }
 
-        SDL_UnlockSurface(m_screen);
-        SDL_Flip(m_screen);
+    void swapBuffers()
+    {
+        m_canvas.swapBuffers();
     }
 
 };
@@ -133,7 +131,8 @@ int main(int argc, char **argv)
 
     SDL_Surface *screen = SDL_SetVideoMode(640, 480, 24, SDL_HWSURFACE|SDL_DOUBLEBUF);
 
-    Renderer r(screen);
+    Canvas canvas(screen);
+    Renderer r(canvas);
     // Example data
     float pp[][3] = {
         {-0.5, -0.5, 0},
@@ -141,14 +140,12 @@ int main(int argc, char **argv)
         {0.5, -0.5, 0},
         {0.5, 0.5, 0}
     };
-    std::vector<vec4f> dots;
-    for (int i = 0; i < 4; i++)
-        dots.push_back(vec4f(pp[i][0], pp[i][1], pp[i][2], 1));
-    r.vertexPointer(&dots);
+    r.vertexPointer(pp);
 
     r.render(POINTS);
     r.transform(rotate(1.f, 1.f, 0.f, 0.f));
     r.render(TRIANGLE_STRIP);
+    r.swapBuffers();
 
     bool run = true;
     while (run) {

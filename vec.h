@@ -68,7 +68,7 @@ public:
             p[i] = (T)src[i];
     }
 
-	T x() const { return p[0]; }
+    T x() const { return p[0]; }
 	T y() const { return p[1]; }
 	T z() const { return p[2]; }
     T w() const { return p[3]; }

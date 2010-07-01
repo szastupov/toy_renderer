@@ -4,6 +4,11 @@
 
 #define SWAP(x, y) { x ^= y; y ^= x; x ^= y; }
 
+void Canvas::swapBuffers()
+{
+    SDL_Flip(m_surface);
+}
+
 void Canvas::color(uint8_t r, uint8_t g, uint8_t b)
 {
     SDL_PixelFormat *format = m_surface->format;
