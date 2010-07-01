@@ -10,6 +10,7 @@
 #include "canvas.h"
 
 typedef std::vector<vec4f> VertexArray;
+typedef enum { TRIANGLE_STRIP, LINE_STRIP, LINE_LOOP, POINTS } prim_t;
 
 class Renderer {
     SDL_Surface *m_screen;
@@ -19,23 +20,23 @@ class Renderer {
     Matrix4f m_trans;
     Canvas m_canvas;
 
-    void drawPoints(const Matrix4f &trans)
+    void drawPoints()
     {
         const VertexArray &dots = *m_vertices;
         for (unsigned i = 0; i < dots.size(); i++) {
-            vec4f dot = trans * dots[i];
+            vec4f dot = m_trans * dots[i];
             dot = dot/dot.w();
             m_canvas.plot(dot.x(), dot.y());
         }
     }
 
-    void drawLines(const Matrix4f &trans, bool loop = true)
+    void drawLines(bool loop = true)
     {
         const VertexArray &dots = *m_vertices;
         vec2i p0, p1, p2;
 
         for (unsigned i = 0; i < dots.size(); i++) {
-            vec4f dot = trans * dots[i];
+            vec4f dot = m_trans * dots[i];
             dot = dot/dot.w();
 
             if (i == 0) {
@@ -84,7 +85,11 @@ public:
         float sy = m_screen->h/2;
 
         m_viewport = scale(sx, -sy, 1.0f) * translate(1.0f, -1.0f, 0.0f);
-        m_model = rotate(1.f, 1.f, 0.f, 0.f);
+    }
+
+    void transform(const Matrix4f &m)
+    {
+        m_model = m * m_model;
     }
 
     void vertexPointer(const VertexArray *vp)
@@ -92,7 +97,7 @@ public:
         m_vertices = vp;
     }
 
-    void render()
+    void render(prim_t mode)
     {
         Matrix4f proj;
         proj[2][3] = 1;
@@ -101,9 +106,20 @@ public:
 
         SDL_LockSurface(m_screen);
 
-        drawTriangleStrip();
-        //drawLines();
-        //drawPoints();
+        switch (mode) {
+        case TRIANGLE_STRIP:
+            drawTriangleStrip();
+            break;
+        case LINE_LOOP:
+            drawLines();
+            break;
+        case LINE_STRIP:
+            drawLines(false);
+            break;
+        case POINTS:
+            drawPoints();
+            break;
+        }
 
         SDL_UnlockSurface(m_screen);
         SDL_Flip(m_screen);
@@ -129,7 +145,10 @@ int main(int argc, char **argv)
     for (int i = 0; i < 4; i++)
         dots.push_back(vec4f(pp[i][0], pp[i][1], pp[i][2], 1));
     r.vertexPointer(&dots);
-    r.render();
+
+    r.render(POINTS);
+    r.transform(rotate(1.f, 1.f, 0.f, 0.f));
+    r.render(TRIANGLE_STRIP);
 
     bool run = true;
     while (run) {
