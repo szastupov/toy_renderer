@@ -100,7 +100,6 @@ public:
         proj[3][3] = 0;
         m_trans = m_viewport * proj * translate(0.f, 0.f, 1.f) * m_model;
 
-        m_canvas.lock();
         switch (mode) {
         case TRIANGLE_STRIP:
             drawTriangleStrip();
@@ -115,65 +114,39 @@ public:
             drawPoints();
             break;
         }
-        m_canvas.unlock();
     }
-
-    void swapBuffers()
-    {
-        m_canvas.swapBuffers();
-    }
-
 };
 
-SDL_Surface* test_texture(SDL_PixelFormat *format)
+Pixman test_texture(SDL_PixelFormat *format)
 {
-    int w = 10;
-    int h = 10;
-    SDL_Surface *surface =
-        SDL_CreateRGBSurface(SDL_SWSURFACE,
-                             w, h,
-                             format->BitsPerPixel,
-                             format->Rmask,
-                             format->Gmask,
-                             format->Bmask,
-                             format->Amask);
+    int size = 10;
+    Pixman tex(size, size, format);
 
-    int bpp = format->BytesPerPixel;
-    int pitch = surface->pitch;
-    SDL_LockSurface(surface);
-    for (int y = 0; y < h; y++)
-        for (int x = 0; x < w; x++) {
-            uint8_t *pixels = (uint8_t*)surface->pixels + y*pitch + x*bpp;
+    for (int y = 0; y < size; y++)
+        for (int x = 0; x < size; x++) {
             uint32_t color;
             if ((y+x) & 1)
-                color = SDL_MapRGB(format, 0x00, 0x00, 0x00);
+                color = tex.mapRGB(0x00, 0x00, 0x00);
             else
-                color = SDL_MapRGB(format, 0xFF, 0xFF, 0xFF);
-            *(uint32_t*)pixels = color;
+                color = tex.mapRGB(0xFF, 0xFF, 0xFF);
+            tex.set(x, y, color);
         }
-    SDL_UnlockSurface(surface);
 
-    return surface;
+    return tex;
 }
 
-void scaling_copy(SDL_Surface *dst, int w, int h, SDL_Surface *src)
+void scaling_copy(Pixman &dst, int w, int h, Pixman &src)
 {
-    float sx = (float)src->w/w;
-    float sy = (float)src->h/h;
+    float sx = (float)src.width()/w;
+    float sy = (float)src.height()/h;
 
-    SDL_PixelFormat *format = src->format;
-    int bpp = format->BytesPerPixel;
-    SDL_LockSurface(dst);
     for (int y = 0; y < h; y++) {
         int ny = (int)(sy*y);
         for (int x = 0; x < w; x++) {
             int nx = (int)(sx*x);
-            uint8_t *pdst = (uint8_t*)dst->pixels + y*dst->pitch + x*bpp;
-            uint8_t *psrc = (uint8_t*)src->pixels + ny*src->pitch + nx*bpp;
-            memcpy(pdst, psrc, bpp);
+            dst.set(x, y, src.get(nx, ny));
         }
     }
-    SDL_UnlockSurface(dst);
 }
 
 int main(int argc, char **argv)
@@ -181,9 +154,10 @@ int main(int argc, char **argv)
     SDL_Init(SDL_INIT_VIDEO);
 
     SDL_Surface *screen = SDL_SetVideoMode(640, 480, 24, SDL_SWSURFACE|SDL_DOUBLEBUF);
-    SDL_Surface *texture = test_texture(screen->format);
+    Pixman pscreen(screen);
+    Pixman texture = test_texture(screen->format);
 
-    Canvas canvas(screen);
+    Canvas canvas(pscreen);
     Renderer r(canvas);
     // Example data
     float pp[][3] = {
@@ -198,9 +172,8 @@ int main(int argc, char **argv)
     r.transform(translate(-0.5f, 0.5f, 0.f));
     //r.transform(rotate(1.f, 1.f, 0.f, 0.f));
     r.render(TRIANGLE_STRIP);
-    r.swapBuffers();
 
-    scaling_copy(screen, screen->w/2, screen->h/2, texture);
+    scaling_copy(pscreen, screen->w/2, screen->h/2, texture);
     SDL_Flip(screen);
 
     bool run = true;

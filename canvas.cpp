@@ -4,39 +4,18 @@
 
 #define SWAP(x, y) { x ^= y; y ^= x; x ^= y; }
 
-void Canvas::swapBuffers()
-{
-    SDL_Flip(m_surface);
-}
-
 void Canvas::color(uint8_t r, uint8_t g, uint8_t b)
 {
-    SDL_PixelFormat *format = m_surface->format;
-    m_color = r << format->Rshift | g << format->Gshift | b << format->Bshift;
-}
-
-void Canvas::colorMask(bool r, bool g, bool b, bool a)
-{
-    SDL_PixelFormat *format = m_surface->format;
-    m_mask = 0;
-    if (r) m_mask |= format->Rmask;
-    if (g) m_mask |= format->Gmask;
-    if (b) m_mask |= format->Bmask;
-    if (a) m_mask |= format->Amask;
+    m_color = m_surface.mapRGB(r, g, b);
 }
 
 void Canvas::plot(int x, int y)
 {
-    if (x < 0 || x > m_surface->w ||
-        y < 0 || y > m_surface->h)
+    if (x < 0 || x > m_surface.width() ||
+        y < 0 || y > m_surface.height())
         return;
 
-    SDL_PixelFormat *format = m_surface->format;
-    int bpp = format->BytesPerPixel;
-    int pitch = m_surface->pitch;
-    uint8_t *pixels = (uint8_t*)m_surface->pixels + y*pitch + x*bpp;
-
-    *(uint32_t*)pixels = m_color & m_mask;
+    m_surface.set(x, y, m_color);
 }
 
 void Canvas::line(int x1, int y1, int x2, int y2)
