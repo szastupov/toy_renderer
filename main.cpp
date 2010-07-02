@@ -125,11 +125,63 @@ public:
 
 };
 
+SDL_Surface* test_texture(SDL_PixelFormat *format)
+{
+    int w = 10;
+    int h = 10;
+    SDL_Surface *surface =
+        SDL_CreateRGBSurface(SDL_SWSURFACE,
+                             w, h,
+                             format->BitsPerPixel,
+                             format->Rmask,
+                             format->Gmask,
+                             format->Bmask,
+                             format->Amask);
+
+    int bpp = format->BytesPerPixel;
+    int pitch = surface->pitch;
+    SDL_LockSurface(surface);
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            uint8_t *pixels = (uint8_t*)surface->pixels + y*pitch + x*bpp;
+            uint32_t color;
+            if ((y+x) & 1)
+                color = SDL_MapRGB(format, 0x00, 0x00, 0x00);
+            else
+                color = SDL_MapRGB(format, 0xFF, 0xFF, 0xFF);
+            *(uint32_t*)pixels = color;
+        }
+    SDL_UnlockSurface(surface);
+
+    return surface;
+}
+
+void scaling_copy(SDL_Surface *dst, int w, int h, SDL_Surface *src)
+{
+    float sx = (float)src->w/w;
+    float sy = (float)src->h/h;
+
+    SDL_PixelFormat *format = src->format;
+    int bpp = format->BytesPerPixel;
+    SDL_LockSurface(dst);
+    for (int y = 0; y < h; y++) {
+        int ny = (int)(sy*y);
+        for (int x = 0; x < w; x++) {
+            int nx = (int)(sx*x);
+            uint8_t *pdst = (uint8_t*)dst->pixels + y*dst->pitch + x*bpp;
+            uint8_t *psrc = (uint8_t*)src->pixels + ny*src->pitch + nx*bpp;
+            memcpy(pdst, psrc, bpp);
+        }
+    }
+    SDL_UnlockSurface(dst);
+}
+
 int main(int argc, char **argv)
 {
     SDL_Init(SDL_INIT_VIDEO);
 
-    SDL_Surface *screen = SDL_SetVideoMode(640, 480, 24, SDL_HWSURFACE|SDL_DOUBLEBUF);
+    SDL_Surface *screen = SDL_SetVideoMode(640, 480, 24, SDL_SWSURFACE|SDL_DOUBLEBUF);
+    SDL_Surface *texture = test_texture(screen->format);
 
     Canvas canvas(screen);
     Renderer r(canvas);
@@ -143,9 +195,13 @@ int main(int argc, char **argv)
     r.vertexPointer(pp);
 
     r.render(POINTS);
-    r.transform(rotate(1.f, 1.f, 0.f, 0.f));
+    r.transform(translate(-0.5f, 0.5f, 0.f));
+    //r.transform(rotate(1.f, 1.f, 0.f, 0.f));
     r.render(TRIANGLE_STRIP);
     r.swapBuffers();
+
+    scaling_copy(screen, screen->w/2, screen->h/2, texture);
+    SDL_Flip(screen);
 
     bool run = true;
     while (run) {
