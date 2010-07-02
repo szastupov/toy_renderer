@@ -7,14 +7,17 @@
 class Canvas {
     SDL_Surface *m_surface;
     uint32_t m_color;
+    uint32_t m_mask;
 public:
     Canvas(SDL_Surface *surf)
         : m_surface(surf)
     {
         color(0xFF, 0x00, 0x00);
+        colorMask(true, true, true, true);
     }
 
     void color(uint8_t r, uint8_t g, uint8_t b);
+    void colorMask(bool r, bool g, bool b, bool a);
 
     void plot(int x, int y);
     void line(int x1, int y1, int x2, int y2);
