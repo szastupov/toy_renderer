@@ -6,6 +6,7 @@
 #include <vector>
 #include <algorithm>
 #include <sys/time.h>
+#define ENABLE_IOSTREAM
 #include "transform.h"
 #include "canvas.h"
 

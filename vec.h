@@ -1,15 +1,6 @@
 #ifndef VEC_H
 #define VEC_H
 
-/*
- * ----------------------------------------------------------------------------
- * "THE BEER-WARE LICENSE" (Revision 42):
- * <redchrom@gmail.com> wrote this file. As long as you retain this notice you
- * can do whatever you want with this stuff. If we meet some day, and you think
- * this stuff is worth it, you can buy me a beer in return Stepan Zastupov
- * ----------------------------------------------------------------------------
- */
-
 #include <cstdlib>
 #include <cmath>
 #include <cassert>
@@ -180,9 +171,6 @@ static T det(const vec<2, T> &a, const vec<2, T> &b)
 	return a.x()*b.y()-b.x()*a.y();
 }
 
-#undef vec_for_each
-
-
 typedef vec<2, float> vec2f;
 typedef vec<3, float> vec3f;
 typedef vec<4, float> vec4f;
@@ -212,5 +200,24 @@ static void vec_test()
 #undef ASSERT
 }
 #endif
+
+#ifdef ENABLE_IOSTREAM
+#include <iostream>
+template <size_t N, typename T>
+std::ostream &operator<<(std::ostream &out, const vec<N, T> &v)
+{
+    out << "(";
+    vec_for_each(i) {
+        out << v[i];
+        if (i+1 != N)
+            out << ", ";
+    }
+    out << ")";
+
+    return out;
+}
+#endif
+
+#undef vec_for_each
 
 #endif

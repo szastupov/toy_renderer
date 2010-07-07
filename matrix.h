@@ -52,16 +52,6 @@ public:
         return p[j];
     }
 
-    void print()
-    {
-        for (size_t i = 0; i < NI; i++) {
-            for (size_t j = 0; j < NJ; j++)
-                printf("%f ", p[j][i]);
-            printf("\n");
-        }
-    }
-
-
 #define MATRIX_OP(op)                           \
     Matrix operator op (const Matrix &m) const  \
     {                                           \
@@ -143,5 +133,20 @@ Matrix<N, N, T> outer(const vec<N, T> &u,
 
     return n;
 }
+
+#ifdef ENABLE_IOSTREAM
+#include <iostream>
+#include <iomanip>
+template <size_t NI, size_t NJ, typename T>
+std::ostream &operator<<(std::ostream &out, const Matrix<NI, NJ, T> &m)
+{
+    for (size_t i = 0; i < NI; i++) {
+        for (size_t j = 0; j < NJ; j++)
+            out << std::left << std::setw(5) << m[j][i] << " ";
+        out << std::endl;
+    }
+    return out;
+}
+#endif
 
 #endif
