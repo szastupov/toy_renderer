@@ -3,41 +3,45 @@
 
 #include "SDL.h"
 
-class Pixman {
-    uint8_t *colors;
-    uint16_t w, h;
-    unsigned pitch;
+struct PixelFormat {
     uint16_t bpp;
     uint8_t mR, mG, mB, mA;
     uint8_t sR, sG, sB, sA;
+};
+
+class Pixman {
+    uint16_t w, h;
+    unsigned pitch;
+    PixelFormat pf;
+    uint8_t *colors;
     bool allocated;
 
     void initSDL(SDL_PixelFormat *sdlFormat)
     {
-        bpp = sdlFormat->BytesPerPixel;
-        pitch = bpp*w;
-        mR = sdlFormat->Rmask;
-        mG = sdlFormat->Gmask;
-        mB = sdlFormat->Bmask;
-        mA = sdlFormat->Amask;
-        sR = sdlFormat->Rshift;
-        sG = sdlFormat->Gshift;
-        sB = sdlFormat->Bshift;
-        sA = sdlFormat->Ashift;
+        pf.bpp = sdlFormat->BytesPerPixel;
+        pitch = pf.bpp*w;
+        pf.mR = sdlFormat->Rmask;
+        pf.mG = sdlFormat->Gmask;
+        pf.mB = sdlFormat->Bmask;
+        pf.mA = sdlFormat->Amask;
+        pf.sR = sdlFormat->Rshift;
+        pf.sG = sdlFormat->Gshift;
+        pf.sB = sdlFormat->Bshift;
+        pf.sA = sdlFormat->Ashift;
     }
 
     uint32_t* pixel(uint16_t x, uint16_t y) const
     {
-        return (uint32_t*)(colors + y*pitch + x*bpp);
+        return (uint32_t*)(colors + y*pitch + x*pf.bpp);
     }
 
 public:
-    Pixman(uint16_t sw, uint16_t sh, SDL_PixelFormat *sdlFormat)
+    Pixman(uint16_t sw, uint16_t sh, SDL_PixelFormat *sdlFormat) :
+        w(sw),
+        h(sh)
     {
-        w = sw;
-        h = sh;
         initSDL(sdlFormat);
-        colors = (uint8_t*)malloc(h*pitch);
+        colors = new uint8_t[h*pitch];
         allocated = true;
     }
 
@@ -50,10 +54,21 @@ public:
         allocated = false;
     }
 
+    Pixman(const Pixman &src) :
+        w(src.w),
+        h(src.h),
+        pitch(src.pitch),
+        pf(src.pf),
+        colors(new uint8_t[h*pitch]),
+        allocated(true)
+    {
+        memcpy(colors, src.colors, h*pitch);
+    }
+
     ~Pixman()
     {
         if (allocated)
-            free(colors);
+            delete [] colors;
     }
 
     uint16_t width()
@@ -68,12 +83,12 @@ public:
 
     uint32_t mapRGB(uint8_t r, uint8_t g, uint8_t b)
     {
-        return r << sR | g << sG | b << sB | mA;
+        return r << pf.sR | g << pf.sG | b << pf.sB | pf.mA;
     }
 
     uint8_t mapRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
     {
-        return r << sR | g << sG | b << sB | (a << sA & mA);
+        return r << pf.sR | g << pf.sG | b << pf.sB | (a << pf.sA & pf.mA);
     }
 
     uint32_t get(uint32_t x, uint32_t y) const
