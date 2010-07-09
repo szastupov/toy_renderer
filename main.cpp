@@ -118,7 +118,7 @@ public:
     }
 };
 
-Pixman test_texture(SDL_PixelFormat *format)
+Pixman test_texture(const PixelFormat &format)
 {
     int size = 10;
     Pixman tex(size, size, format);
@@ -150,14 +150,32 @@ void scaling_copy(Pixman &dst, int w, int h, Pixman &src)
     }
 }
 
+Pixman sdlPixman(SDL_Surface *sdlSurface)
+{
+    SDL_PixelFormat *sdlFormat = sdlSurface->format;
+    PixelFormat pf;
+    pf.bpp = sdlFormat->BytesPerPixel;
+    pf.mR = sdlFormat->Rmask;
+    pf.mG = sdlFormat->Gmask;
+    pf.mB = sdlFormat->Bmask;
+    pf.mA = sdlFormat->Amask;
+    pf.sR = sdlFormat->Rshift;
+    pf.sG = sdlFormat->Gshift;
+    pf.sB = sdlFormat->Bshift;
+    pf.sA = sdlFormat->Ashift;
+
+    return Pixman(sdlSurface->w, sdlSurface->h,
+                  pf, (uint8_t*)sdlSurface->pixels);
+}
+
 int main(int argc, char **argv)
 {
     SDL_Init(SDL_INIT_VIDEO);
 
     SDL_Surface *screen = SDL_SetVideoMode(640, 480, 24, SDL_SWSURFACE|SDL_DOUBLEBUF);
     assert(screen != NULL);
-    Pixman pscreen(screen);
-    Pixman texture = test_texture(screen->format);
+    Pixman pscreen = sdlPixman(screen);
+    Pixman texture = test_texture(pscreen.format());
 
     Canvas canvas(pscreen);
     Renderer r(canvas);

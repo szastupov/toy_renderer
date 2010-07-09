@@ -10,25 +10,11 @@ struct PixelFormat {
 };
 
 class Pixman {
+    PixelFormat pf;
     uint16_t w, h;
     unsigned pitch;
-    PixelFormat pf;
     uint8_t *colors;
     bool allocated;
-
-    void initSDL(SDL_PixelFormat *sdlFormat)
-    {
-        pf.bpp = sdlFormat->BytesPerPixel;
-        pitch = pf.bpp*w;
-        pf.mR = sdlFormat->Rmask;
-        pf.mG = sdlFormat->Gmask;
-        pf.mB = sdlFormat->Bmask;
-        pf.mA = sdlFormat->Amask;
-        pf.sR = sdlFormat->Rshift;
-        pf.sG = sdlFormat->Gshift;
-        pf.sB = sdlFormat->Bshift;
-        pf.sA = sdlFormat->Ashift;
-    }
 
     uint32_t* pixel(uint16_t x, uint16_t y) const
     {
@@ -36,29 +22,27 @@ class Pixman {
     }
 
 public:
-    Pixman(uint16_t sw, uint16_t sh, SDL_PixelFormat *sdlFormat) :
-        w(sw),
-        h(sh)
-    {
-        initSDL(sdlFormat);
-        colors = new uint8_t[h*pitch];
-        allocated = true;
-    }
+    Pixman(uint16_t sw, uint16_t sh, const PixelFormat &pf) :
+        pf(pf),
+        w(sw), h(sh),
+        pitch(4*w),
+        colors(new uint8_t[h*pitch]),
+        allocated(true)
+    {}
 
-    Pixman(SDL_Surface *sdlSurface)
-    {
-        w = sdlSurface->w;
-        h = sdlSurface->h;
-        initSDL(sdlSurface->format);
-        colors = (uint8_t*)sdlSurface->pixels;
-        allocated = false;
-    }
+    Pixman(uint16_t sw, uint16_t sh, const PixelFormat &pf, uint8_t *scolors) :
+        pf(pf),
+        w(sw), h(sh),
+        pitch(pf.bpp*w),
+        colors(scolors),
+        allocated(false)
+    {}
 
     Pixman(const Pixman &src) :
+        pf(src.pf),
         w(src.w),
         h(src.h),
         pitch(src.pitch),
-        pf(src.pf),
         colors(new uint8_t[h*pitch]),
         allocated(true)
     {
@@ -79,6 +63,11 @@ public:
     uint16_t height()
     {
         return h;
+    }
+
+    const PixelFormat& format() const
+    {
+        return pf;
     }
 
     uint32_t mapRGB(uint8_t r, uint8_t g, uint8_t b)
