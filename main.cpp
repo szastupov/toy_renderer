@@ -136,7 +136,7 @@ Pixman test_texture(const PixelFormat &format)
     return tex;
 }
 
-void scaling_copy(Pixman &dst, int w, int h, Pixman &src)
+void scaling_copy(Pixman &dst, int w, int h, const Pixman &src)
 {
     float sx = (float)src.width()/w;
     float sy = (float)src.height()/h;

@@ -10,9 +10,10 @@ struct PixelFormat {
 };
 
 class Pixman {
-    PixelFormat pf;
+    const PixelFormat pf;
     uint16_t w, h;
     unsigned pitch;
+    size_t size;
     uint8_t *colors;
     bool allocated;
 
@@ -22,20 +23,15 @@ class Pixman {
     }
 
 public:
-    Pixman(uint16_t sw, uint16_t sh, const PixelFormat &pf) :
-        pf(pf),
-        w(sw), h(sh),
-        pitch(4*w),
-        colors(new uint8_t[h*pitch]),
-        allocated(true)
-    {}
-
-    Pixman(uint16_t sw, uint16_t sh, const PixelFormat &pf, uint8_t *scolors) :
+    Pixman(uint16_t sw, uint16_t sh,
+           const PixelFormat &pf,
+           uint8_t *scolors = NULL) :
         pf(pf),
         w(sw), h(sh),
         pitch(pf.bpp*w),
-        colors(scolors),
-        allocated(false)
+        size(h*pitch+1),
+        colors(scolors ? scolors : new uint8_t[size]),
+        allocated(!scolors)
     {}
 
     Pixman(const Pixman &src) :
@@ -43,7 +39,8 @@ public:
         w(src.w),
         h(src.h),
         pitch(src.pitch),
-        colors(new uint8_t[h*pitch]),
+        size(src.size),
+        colors(new uint8_t[size]),
         allocated(true)
     {
         memcpy(colors, src.colors, h*pitch);
@@ -55,12 +52,11 @@ public:
             delete [] colors;
     }
 
-    uint16_t width()
+    uint16_t width() const
     {
         return w;
     }
-
-    uint16_t height()
+    uint16_t height() const
     {
         return h;
     }
