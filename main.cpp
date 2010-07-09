@@ -190,11 +190,10 @@ int main(int argc, char **argv)
     r.vertexPointer(pp);
 
     r.render(POINTS);
-    r.transform(translate(-0.5f, 0.5f, 0.f));
     //r.transform(rotate(1.f, 1.f, 0.f, 0.f));
     r.render(TRIANGLE_STRIP);
 
-    scaling_copy(pscreen, screen->w/2, screen->h/2, texture);
+    //scaling_copy(pscreen, screen->w/2, screen->h/2, texture);
     SDL_Flip(screen);
 
     bool run = true;
