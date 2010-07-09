@@ -1,7 +1,8 @@
 #ifndef PIXMAN_H
 #define PIXMAN_H
 
-#include "SDL.h"
+#include <cstring>
+#include <stdint.h>
 
 struct PixelFormat {
     uint16_t bpp;
