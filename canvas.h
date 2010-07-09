@@ -7,6 +7,9 @@
 class Canvas {
     Pixman &m_surface;
     uint32_t m_color;
+
+    void triangleUpDown(vec2i v[3]);
+    void triangleDownUp(vec2i v[3]);
 public:
     Canvas(Pixman &surf)
         : m_surface(surf)
@@ -18,6 +21,7 @@ public:
 
     void plot(int x, int y);
     void line(int x1, int y1, int x2, int y2);
+    void straightLine(int x1, int x2, int y);
     void triangle(const vec2i v[3]);
 
     int width()

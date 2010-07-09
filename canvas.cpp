@@ -49,6 +49,12 @@ void Canvas::line(int x1, int y1, int x2, int y2)
     }
 }
 
+void Canvas::straightLine(int x1, int x2, int y)
+{
+    for (int x = x1; x <= x2; x++)
+        plot(x, y);
+}
+
 static bool cmpY(const vec2i &a, const vec2i &b)
 {
     return a.y() < b.y();
@@ -69,6 +75,51 @@ static bool cmpY(const vec2i &a, const vec2i &b)
 // }
 
 
+void Canvas::triangleUpDown(vec2i v[3])
+{
+    int x0 = v[0].x();
+    int x1 = std::min(v[1].x(), v[2].x());
+    int x2 = std::max(v[1].x(), v[2].x());
+
+    float dy = v[2].y() - v[0].y();
+    float dxl = (x1 - x0)/dy;
+    float dxr = (x2 - x0)/dy;
+    float xl = x0;
+    float xr = xl;
+
+    for (int y = v[0].y(); y <= v[2].y(); y++) {
+        straightLine(xl, xr, y);
+        xl += dxl;
+        xr += dxr;
+    }
+}
+
+
+void Canvas::triangleDownUp(vec2i v[3])
+{
+    int x0 = v[2].x();
+    int x1 = std::min(v[0].x(), v[1].x());
+    int x2 = std::max(v[0].x(), v[1].x());
+
+    float dy = v[2].y() - v[0].y();
+    float dxl = (x1 - x0)/dy;
+    float dxr = (x2 - x0)/dy;
+    float xl = x0;
+    float xr = xl;
+
+    for (int y = v[2].y(); y >= v[0].y(); y--) {
+        straightLine(xl, xr, y);
+        xl += dxl;
+        xr += dxr;
+    }
+}
+
+static int getX(const vec2i &a, const vec2i &b, int y)
+{
+    vec2i d = b-a;
+    return (float)(y-a.y()) / ((float)d.y()/(float)d.x()) + a.x();
+}
+
 void Canvas::triangle(const vec2i vs[3])
 {
     vec2i v[3];
@@ -79,36 +130,26 @@ void Canvas::triangle(const vec2i vs[3])
     if (v[0].y() == v[2].y())
         return;                 // Empty triangle
 
-    // int x1, x2;
-    // int h;                      // 0 - top half, 1- bottom
-    // for (int y = v[0].y(); y <= v[2].y(); y++) {
-    //     h = y < v[1].y() ? 0 : 1;
+    if (v[0].y() == v[1].y())
+        triangleDownUp(v);
+    else if (v[1].y() == v[2].y())
+        triangleUpDown(v);
+    else {
+        vec2i vh[3];
 
-    //     x1 = getX(v[0], v[2], y);
-    //     if (v[h].y() == v[h+1].y())
-    //         x2 = v[h+1].x();
-    //     else
-    //         x2 = getX(v[h], v[h+1], y);
+        int hy = v[1].y();
+        int hx = getX(v[0], v[2], hy);
 
-    //     if (x1 > x2)
-    //         SWAP(x2, x1);
-    //     for (int x = x1; x <= x2; x++)
-    //         plot(x, y);
-    // }
+        vh[0] = v[0];
+        vh[1] = v[1];
+        vh[2][0] = hx;
+        vh[2][1] = hy;
+        triangleUpDown(vh);
 
-    int x1 = std::min(v[1].x(), v[2].x());
-    int x2 = std::max(v[1].x(), v[2].x());
-
-    float dy = v[2].y() - v[0].y();
-    float dxl = (x1 - v[0].x())/dy;
-    float dxr = (x2 - v[0].x())/dy;
-    float xl = v[0].x();
-    float xr = xl;
-
-    for (int y = v[0].y(); y <= v[2].y(); y++) {
-        for (int x = xl; x <= xr; x++)
-            plot(x, y);
-        xl += dxl;
-        xr += dxr;
+        vh[0][0] = hx;
+        vh[0][1] = hy;
+        vh[1] = v[1];
+        vh[2] = v[2];
+        triangleDownUp(vh);
     }
 }

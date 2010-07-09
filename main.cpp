@@ -88,10 +88,10 @@ public:
         m_model = m * m_model;
     }
 
-    void vertexPointer(const float pp[][3])
+    void vertexPointer(const float pp[][3], int count)
     {
         m_vertices.clear();
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < count; i++)
             m_vertices.push_back(vec4f(pp[i][0], pp[i][1], pp[i][2], 1));
     }
 
@@ -187,10 +187,10 @@ int main(int argc, char **argv)
         {0.5, -0.5, 0},
         {0.5, 0.5, 0}
     };
-    r.vertexPointer(pp);
+    r.vertexPointer(pp, 4);
 
     r.render(POINTS);
-    //r.transform(rotate(1.f, 1.f, 0.f, 0.f));
+    r.transform(rotate(1.f, 1.f, 0.f, 0.f));
     r.render(TRIANGLE_STRIP);
 
     //scaling_copy(pscreen, screen->w/2, screen->h/2, texture);
