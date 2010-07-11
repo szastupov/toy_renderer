@@ -1,13 +1,13 @@
-SDL_CFLAGS := $(shell sdl-config --cflags)
-SDL_LDFLAGS := $(shell sdl-config --libs)
+SDL_CFLAGS := $(shell pkg-config sdl --cflags)
+SDL_LDFLAGS := $(shell pkg-config sdl --libs)
 
 CFLAGS += $(SDL_CFLAGS) -Wall -MD -ggdb 
-LDFLAGS += $(SDL_LDFLAGS)
+LDLIBS += $(SDL_LDFLAGS)
 
 CXXFLAGS += $(CFLAGS)
 
 game: main.o transform.o canvas.o
-	$(LINK.cc) $^ -o $@
+	$(LINK.cc) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 clean:
 	rm -f *.o *.d game

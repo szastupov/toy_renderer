@@ -8,8 +8,7 @@ class Canvas {
     Pixman &m_surface;
     uint32_t m_color;
 
-    void triangleUpDown(vec2i v[3]);
-    void triangleDownUp(vec2i v[3]);
+    void scanlineTriangle(const vec2i v[3], int dir);
 public:
     Canvas(Pixman &surf)
         : m_surface(surf)
