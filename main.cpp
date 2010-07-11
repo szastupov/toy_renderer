@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <sys/time.h>
 #include "SDL.h"
-#define ENABLE_IOSTREAM
+//#define ENABLE_IOSTREAM
 #include "transform.h"
 #include "canvas.h"
 
@@ -169,6 +169,7 @@ Pixman sdlPixman(SDL_Surface *sdlSurface)
                   pf, (uint8_t*)sdlSurface->pixels);
 }
 
+
 int main(int argc, char **argv)
 {
     SDL_Init(SDL_INIT_VIDEO);
@@ -192,6 +193,7 @@ int main(int argc, char **argv)
     r.render(POINTS);
     r.transform(rotate(1.f, 1.f, 0.f, 0.f));
     r.render(TRIANGLE_STRIP);
+    //r.render(LINE_LOOP);
 
     //scaling_copy(pscreen, screen->w/2, screen->h/2, texture);
     SDL_Flip(screen);

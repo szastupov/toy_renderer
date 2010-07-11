@@ -3,8 +3,6 @@
 
 #include "canvas.h"
 
-#define SWAP(x, y) { x ^= y; y ^= x; x ^= y; }
-
 void Canvas::color(uint8_t r, uint8_t g, uint8_t b)
 {
     m_color = m_surface.mapRGB(r, g, b);
@@ -21,37 +19,44 @@ void Canvas::plot(int x, int y)
 
 void Canvas::line(int x1, int y1, int x2, int y2)
 {
-    bool steep = abs(y2 - y1) > abs(x2 - x1);
-    if (steep) {
-        SWAP(x1, y1);
-        SWAP(x2, y2);
+    if (y1 == y2) {
+        if (x1 > x2)
+            std::swap(x1, x2);
+        straightLineX(x1, x2, y1);
+        return;
     }
+
+    if (x1 == x2) {
+        if (y1 > y2)
+            std::swap(y1, y2);
+        straightLineY(y1, y2, x1);
+        return;
+    }
+
     if (x1 > x2) {
-        SWAP(x1, x2);
-        SWAP(y1, y2);
+        std::swap(x1, x2);
+        std::swap(y1, y2);
     }
 
-    int dx = x2-x1,
-        dy = abs(y2-y1),
-        error = dx >> 1,
-        ystep = y1 < y2 ? 1 : -1;
+    float dx = x2-x1;
+    float dy = (y2-y1)/dx;
+    float y = y1;
 
-    for (int x = x1, y = y1; x <= x2; x++) {
-        if (steep)
-            plot(y, x);
-        else
-            plot(x, y);
-        error -= dy;
-        if (error < 0) {
-            y += ystep;
-            error += dx;
-        }
+    for (int x = x1; x <= x2; x++) {
+        plot(x, y);
+        y += dy;
     }
 }
 
-void Canvas::straightLine(int x1, int x2, int y)
+void Canvas::straightLineX(int x1, int x2, int y)
 {
     for (int x = x1; x <= x2; x++)
+        plot(x, y);
+}
+
+void Canvas::straightLineY(int y1, int y2, int x)
+{
+    for (int y = y1; y <= y2; y++)
         plot(x, y);
 }
 
@@ -60,43 +65,42 @@ static bool cmpY(const vec2i &a, const vec2i &b)
     return a.y() < b.y();
 }
 
+// UP_DOWN - for flat bottom
+// DOWN_UP - for float top
 enum { UP_DOWN, DOWN_UP };
 
 void Canvas::scanlineTriangle(const vec2i v[3], int dir)
 {
     int x0, x1, x2;
+    float dy;
+    float xl, xr;
 
     if (dir == UP_DOWN) {
         x0 = v[0].x();
         x1 = v[1].x();
         x2 = v[2].x();
+        dy = v[2].y() - v[0].y();
+        xl = xr = x0;
     } else {
         x0 = v[2].x();
         x1 = v[0].x();
         x2 = v[1].x();
+        dy = v[0].y() - v[2].y();
+        xl = x1;
+        xr = x2;
     }
 
     if (x1 > x2)
         std::swap(x1, x2);
 
-    float dy = v[2].y() - v[0].y();
     float dxl = (x1-x0)/dy;
     float dxr = (x2-x0)/dy;
-    float xl = x0;
-    float xr = xl;
 
-    if (dir == UP_DOWN)
-        for (int y = v[0].y(); y <= v[2].y(); y++) {
-            straightLine(xl, xr, y);
-            xl += dxl;
-            xr += dxr;
-        }
-    else
-        for (int y = v[2].y(); y >= v[0].y(); y--) {
-            straightLine(xl, xr, y);
-            xl += dxl;
-            xr += dxr;
-        }
+    for (int y = v[0].y(); y <= v[2].y(); y++) {
+        straightLineX(xl, xr, y);
+        xl += dxl;
+        xr += dxr;
+    }
 }
 
 static int getX(const vec2i &a, const vec2i &b, int y)
@@ -108,8 +112,7 @@ static int getX(const vec2i &a, const vec2i &b, int y)
 void Canvas::triangle(const vec2i vs[3])
 {
     vec2i v[3];
-    for (int i = 0; i < 3; i++)
-        v[i] = vs[i];
+    std::copy(vs, vs+3, v);
     std::sort(v, v+3, cmpY);
 
     if (v[0].y() == v[2].y())
@@ -120,6 +123,7 @@ void Canvas::triangle(const vec2i vs[3])
     else if (v[1].y() == v[2].y())
         scanlineTriangle(v, UP_DOWN);
     else {
+        // Make two simple triangles
         vec2i vh[3];
 
         int hy = v[1].y();
