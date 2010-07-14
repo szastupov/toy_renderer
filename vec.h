@@ -158,6 +158,14 @@ static T dot(const vec<N, T> &a, const vec<N, T> &b)
 	return sum;
 }
 
+template <typename T>
+static vec<3, T> cross(const vec<3, T> &a, const vec<3, T> &b)
+{
+    return vec<3, T>(a[1]*b[2]-a[2]*b[1],
+                     a[2]*b[0]-a[0]*b[2],
+                     a[0]*b[1]-a[1]*b[0]);
+}
+
 template <size_t N, typename T>
 static T distance(const vec<N, T> &a, const vec<N, T> &b)
 {
