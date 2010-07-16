@@ -1,3 +1,4 @@
 *.d
 *.o
 game
+.gdb_history

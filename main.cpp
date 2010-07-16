@@ -71,8 +71,8 @@ class Renderer {
             vt[n].x = pos.x();
             vt[n].y = pos.y();
             if (texmap) {
-                vt[n].u = m_texture->width()*m_texcoords[i].x();
-                vt[n].v = m_texture->height()*m_texcoords[i].y();
+                vt[n].u = (m_texture->width()-1)*m_texcoords[i].x();
+                vt[n].v = (m_texture->height()-1)*m_texcoords[i].y();
             }
 
             if (n < 2)
@@ -118,6 +118,7 @@ public:
     void texture(const Pixman *texture)
     {
         m_texture = texture;
+        m_canvas.texture(texture);
     }
 
     void render(prim_t mode)

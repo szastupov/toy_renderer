@@ -18,11 +18,6 @@ class Pixman {
     uint8_t *colors;
     bool allocated;
 
-    uint32_t* pixel(uint16_t x, uint16_t y) const
-    {
-        return (uint32_t*)(colors + y*pitch + x*pf.bpp);
-    }
-
 public:
     Pixman(uint16_t sw, uint16_t sh,
            const PixelFormat &pf,
@@ -72,19 +67,24 @@ public:
         return r << pf.sR | g << pf.sG | b << pf.sB | pf.mA;
     }
 
-    uint8_t mapRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+    uint32_t mapRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
     {
         return r << pf.sR | g << pf.sG | b << pf.sB | (a << pf.sA & pf.mA);
     }
 
     uint32_t get(uint32_t x, uint32_t y) const
     {
-        return *pixel(x, y);
+        assert(x >= 0 && x < w);
+        assert(y >= 0 && y < h);
+        return *(uint32_t*)(colors + y*pitch + x*pf.bpp);
     }
 
     void set(uint32_t x, uint32_t y, uint32_t color)
     {
-        *pixel(x, y) = color;
+        assert(x >= 0 && x < w);
+        assert(y >= 0 && y < h);
+        uint8_t *d = colors + y*pitch + x*pf.bpp;
+        memcpy(d, &color, pf.bpp);
     }
 };
 

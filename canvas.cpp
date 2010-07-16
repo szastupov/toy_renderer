@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <algorithm>
+#include <cassert>
 
 #include "canvas.h"
 
@@ -15,6 +16,15 @@ void Canvas::plot(int x, int y)
         return;
 
     m_surface.set(x, y, m_color);
+}
+
+void Canvas::plot(int x, int y, uint32_t color)
+{
+    if (x < 0 || x > m_surface.width() ||
+        y < 0 || y > m_surface.height())
+        return;
+
+    m_surface.set(x, y, color);
 }
 
 void Canvas::line(int x1, int y1, int x2, int y2)
@@ -66,58 +76,48 @@ enum { UP_DOWN, DOWN_UP };
 
 void Canvas::scanlineTriangle(const Vertex vt[3], int dir)
 {
-    int idx[3];
-    int ixl, ixr;
+    static const int idx1[3] = { 0, 1, 2};
+    static const int idx2[3] = { 2, 0, 1};
+    const int *idx;
+    int l0, r0;
 
     if (dir == UP_DOWN) {
-        idx[0] = 0;
-        idx[1] = 1;
-        idx[2] = 2;
-        ixl = ixr = 0;
+        idx = idx1;
+        l0 = r0 = 0;
     } else {
-        idx[0] = 2;
-        idx[1] = 0;
-        idx[2] = 1;
-        ixl = 0;
-        ixr = 1;
+        idx = idx2;
+        l0 = 1;
+        r0 = 2;
     }
 
-    float vx[3], vu[3], vv[3];
+    vec3f v[3];
     for (int i = 0; i < 3; i++) {
         int j = idx[i];
-        vx[i] = vt[j].x;
-        vu[i] = vt[j].u;
-        vv[i] = vt[j].v;
+        v[i][0] = vt[j].x;
+        v[i][1] = vt[j].u;
+        v[i][2] = vt[j].v;
     }
 
-    if (vx[1] > vx[2])
-        std::swap(vx[1], vx[2]);
+    if (v[1].x() > v[2].x())
+        std::swap(v[1][0], v[2][0]);
 
-    float dy = vt[idx[2]].y - vt[idx[0]].y,
-        dxl = (vx[1]-vx[0])/dy,
-        dxr = (vx[2]-vx[0])/dy,
-        dudyl = (vu[1]-vu[0])/dy,
-        dvdyl = (vv[1]-vv[0])/dy,
-        dudyr = (vu[2]-vu[0])/dy,
-        dvdyr = (vv[2]-vv[0])/dy;
-
-    float xl = vt[ixl].x,
-        xr = vt[ixr].x,
-        ul = vt[ixl].u,
-        ur = vt[ixr].u,
-        vl = vt[ixl].v,
-        vr = vt[ixr].v;
+    float dy = vt[idx[2]].y - vt[idx[0]].y;
+    vec3f dvl = (v[1]-v[0])/dy;
+    vec3f dvr = (v[2]-v[0])/dy;
+    vec3f vl = v[l0];
+    vec3f vr = v[r0];
 
     for (int y = vt[0].y; y <= vt[2].y; y++) {
-        float dx = xr-xl;
-        for (int x = xl; x <= xr; x++)
-            plot(x, y);
-        xl += dxl;
-        xr += dxr;
-        ul += dudyl;
-        ur += dudyr;
-        vl += dvdyl;
-        vr += dvdyr;
+        vec3f ddv = vr-vl;
+        vec2f duv(ddv[1], ddv[2]);
+        duv /= ddv.x();
+        vec2f uv(vl[1], vl[2]);
+        for (int x = vl[0]; x <= vr[0]; x++) {
+            plot(x, y, m_texture->get(uv[0], uv[1]));
+            uv += duv;
+        }
+        vl += dvl;
+        vr += dvr;
     }
 }
 

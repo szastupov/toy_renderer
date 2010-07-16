@@ -14,6 +14,7 @@ struct Vertex {
 class Canvas {
     Pixman &m_surface;
     uint32_t m_color;
+    const Pixman *m_texture;
 
     void scanlineTriangle(const Vertex v[3], int dir);
 public:
@@ -24,8 +25,13 @@ public:
     }
 
     void color(uint8_t r, uint8_t g, uint8_t b);
+    void texture(const Pixman *texture)
+    {
+        m_texture = texture;
+    }
 
     void plot(int x, int y);
+    void plot(int x, int y, uint32_t color);
     void line(int x1, int y1, int x2, int y2);
     void straightLineX(int x1, int x2, int y);
     void straightLineY(int y1, int y2, int x);
