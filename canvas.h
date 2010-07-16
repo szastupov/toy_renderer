@@ -4,11 +4,18 @@
 #include "pixman.h"
 #include "vec.h"
 
+struct Vertex {
+    float x;
+    float y;
+    float u;
+    float v;
+};
+
 class Canvas {
     Pixman &m_surface;
     uint32_t m_color;
 
-    void scanlineTriangle(const vec2i v[3], int dir);
+    void scanlineTriangle(const Vertex v[3], int dir);
 public:
     Canvas(Pixman &surf)
         : m_surface(surf)
@@ -22,7 +29,7 @@ public:
     void line(int x1, int y1, int x2, int y2);
     void straightLineX(int x1, int x2, int y);
     void straightLineY(int y1, int y2, int x);
-    void triangle(const vec2i v[3]);
+    void triangle(const Vertex vs[3]);
 
     int width()
     {

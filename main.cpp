@@ -7,24 +7,26 @@
 #include <algorithm>
 #include <sys/time.h>
 #include "SDL.h"
-//#define ENABLE_IOSTREAM
+#define ENABLE_IOSTREAM
 #include "transform.h"
 #include "canvas.h"
 
 typedef enum { TRIANGLE_STRIP, LINE_STRIP, LINE_LOOP, POINTS } prim_t;
 
 class Renderer {
+    Canvas &m_canvas;
     std::vector<vec4f> m_vertices;
+    std::vector<vec2f> m_texcoords;
+    const Pixman *m_texture;
     Matrix4f m_viewport;
     Matrix4f m_model;
     Matrix4f m_trans;
-    Canvas &m_canvas;
 
     void drawPoints()
     {
         for (unsigned i = 0; i < m_vertices.size(); i++) {
             vec4f dot = m_trans * m_vertices[i];
-            dot = dot/dot.w();
+            dot /= dot.w();
             m_canvas.plot(dot.x(), dot.y());
         }
     }
@@ -35,7 +37,7 @@ class Renderer {
 
         for (unsigned i = 0; i < m_vertices.size(); i++) {
             vec4f dot = m_trans * m_vertices[i];
-            dot = dot/dot.w();
+            dot /= dot.w();
 
             if (i == 0) {
                 p0 = p1 = dot;
@@ -53,29 +55,40 @@ class Renderer {
 
     void drawTriangleStrip()
     {
-        vec2i v[3];
+        bool texmap = m_texture &&
+            m_vertices.size() == m_texcoords.size();
 
-        for (unsigned i = 0, step = 0;
+        Vertex vt[3];
+        memset(&vt, 0, sizeof(vt));
+
+        for (unsigned i = 0, n = 0;
              i < m_vertices.size();
-             i++, step++)
+             i++, n++)
         {
-            vec4f dot = m_trans * m_vertices[i];
-            dot = dot/dot.w();
+            vec4f pos = m_trans * m_vertices[i];
+            pos /= pos.w();
 
-            v[step] = dot;
-            if (step < 2)
+            vt[n].x = pos.x();
+            vt[n].y = pos.y();
+            if (texmap) {
+                vt[n].u = m_texture->width()*m_texcoords[i].x();
+                vt[n].v = m_texture->height()*m_texcoords[i].y();
+            }
+
+            if (n < 2)
                 continue;
 
-            m_canvas.triangle(v);
-            v[0] = v[1];
-            v[1] = v[2];
-            step = 1;
+            m_canvas.triangle(vt);
+            vt[0] = vt[1];
+            vt[1] = vt[2];
+            n = 1;
         }
     }
 
 public:
     Renderer(Canvas &canvas)
         : m_canvas(canvas)
+        , m_texture(NULL)
     {
         float sx = m_canvas.width()/2;
         float sy = m_canvas.height()/2;
@@ -93,6 +106,18 @@ public:
         m_vertices.clear();
         for (int i = 0; i < count; i++)
             m_vertices.push_back(vec4f(pp[i][0], pp[i][1], pp[i][2], 1));
+    }
+
+    void texcoordPointer(const float tt[][2], int count)
+    {
+        m_texcoords.clear();
+        for (int i = 0; i < count; i++)
+            m_texcoords.push_back(vec2f(tt[i][0], tt[i][1]));
+    }
+
+    void texture(const Pixman *texture)
+    {
+        m_texture = texture;
     }
 
     void render(prim_t mode)
@@ -137,20 +162,6 @@ Pixman test_texture(const PixelFormat &format)
     return tex;
 }
 
-void scaling_copy(Pixman &dst, int w, int h, const Pixman &src)
-{
-    float sx = (float)src.width()/w;
-    float sy = (float)src.height()/h;
-
-    for (int y = 0; y < h; y++) {
-        int ny = (int)(sy*y);
-        for (int x = 0; x < w; x++) {
-            int nx = (int)(sx*x);
-            dst.set(x, y, src.get(nx, ny));
-        }
-    }
-}
-
 Pixman sdlPixman(SDL_Surface *sdlSurface)
 {
     SDL_PixelFormat *sdlFormat = sdlSurface->format;
@@ -182,13 +193,24 @@ int main(int argc, char **argv)
     Canvas canvas(pscreen);
     Renderer r(canvas);
     // Example data
+
     float pp[][3] = {
         {-0.5, -0.5, 0},
         {-0.5, 0.5, 0},
         {0.5, -0.5, 0},
         {0.5, 0.5, 0}
     };
+
+    float tt[][2] = {
+        {0.0, 0.0},
+        {0.0, 1.0},
+        {1.0, 0.0},
+        {1.0, 1.0}
+    };
+
     r.vertexPointer(pp, 4);
+    r.texcoordPointer(tt, 4);
+    r.texture(&texture);
 
     r.render(POINTS);
     r.transform(rotate(1.f, 1.f, 0.f, 0.f));
