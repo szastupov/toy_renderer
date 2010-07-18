@@ -90,34 +90,56 @@ void Canvas::scanlineTriangle(const Vertex vt[3], int dir)
         r0 = 2;
     }
 
-    vec3f v[3];
-    for (int i = 0; i < 3; i++) {
-        int j = idx[i];
-        v[i][0] = vt[j].x;
-        v[i][1] = vt[j].u;
-        v[i][2] = vt[j].v;
-    }
-
-    if (v[1].x() > v[2].x())
-        std::swap(v[1][0], v[2][0]);
-
     float dy = vt[idx[2]].y - vt[idx[0]].y;
-    vec3f dvl = (v[1]-v[0])/dy;
-    vec3f dvr = (v[2]-v[0])/dy;
-    vec3f vl = v[l0];
-    vec3f vr = v[r0];
 
-    for (int y = vt[0].y; y <= vt[2].y; y++) {
-        vec3f ddv = vr-vl;
-        vec2f duv(ddv[1], ddv[2]);
-        duv /= ddv.x();
-        vec2f uv(vl[1], vl[2]);
-        for (int x = vl[0]; x <= vr[0]; x++) {
-            plot(x, y, m_texture->get(uv[0], uv[1]));
-            uv += duv;
+    if (m_texture) {
+        // Prepare vectors for interpolation
+        vec3f v[3];
+        for (int i = 0; i < 3; i++) {
+            int j = idx[i];
+            v[i][0] = vt[j].x;
+            v[i][1] = vt[j].u;
+            v[i][2] = vt[j].v;
         }
-        vl += dvl;
-        vr += dvr;
+        if (v[1].x() > v[2].x())
+            std::swap(v[1][0], v[2][0]);
+
+        vec3f dvl = (v[1]-v[0])/dy; // Change in left line
+        vec3f dvr = (v[2]-v[0])/dy; // Change in right line
+        vec3f vl = v[l0];           // Left interpolant
+        vec3f vr = v[r0];           // Right interpolant
+
+        // Interpolate me baby!
+        for (int y = vt[0].y; y <= vt[2].y; y++) {
+            vec3f ddv = vr-vl;
+            // Change in uv
+            vec2f duv(ddv[1], ddv[2]);
+            duv /= ddv.x();
+            vec2f uv(vl[1], vl[2]);
+            for (int x = vl.x(); x <= vr.x(); x++) {
+                plot(x, y, m_texture->get(uv[0], uv[1]));
+                uv += duv;
+            }
+            vl += dvl;
+            vr += dvr;
+        }
+    } else {
+        // TODO: Add color interpolation
+        float vx[3];
+        for (int i = 0; i < 3; i++)
+            vx[i] = vt[idx[i]].x;
+
+        if (vx[1] > vx[2])
+            std::swap(vx[1], vx[2]);
+
+        vec2f dx((vx[1]-vx[0])/dy,
+                 (vx[2]-vx[0])/dy);
+        vec2f x(vx[l0], vx[r0]);
+
+        for (int y = vt[0].y; y <= vt[2].y; y++) {
+            straightLineX(x[0], x[1], y);
+            x += dx;
+        }
     }
 }
 

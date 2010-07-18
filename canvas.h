@@ -13,16 +13,16 @@ struct Vertex {
 
 class Canvas {
     Pixman &m_surface;
-    uint32_t m_color;
     const Pixman *m_texture;
+    uint32_t m_color;
 
     void scanlineTriangle(const Vertex v[3], int dir);
 public:
     Canvas(Pixman &surf)
         : m_surface(surf)
-    {
-        color(0xFF, 0x00, 0x00);
-    }
+        , m_texture(NULL)
+        , m_color(m_surface.mapRGB(0xFF, 0x00, 0x00))
+    {}
 
     void color(uint8_t r, uint8_t g, uint8_t b);
     void texture(const Pixman *texture)

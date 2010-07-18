@@ -199,22 +199,28 @@ int main(int argc, char **argv)
         {-0.5, -0.5, 0},
         {-0.5, 0.5, 0},
         {0.5, -0.5, 0},
-        {0.5, 0.5, 0}
+        {0.5, 0.5, 0},
+
+        {0.5, 0.5, 1.0},
+        {-0.5, 0.5, 1.0}
     };
 
     float tt[][2] = {
         {0.0, 0.0},
         {0.0, 1.0},
         {1.0, 0.0},
-        {1.0, 1.0}
+        {1.0, 1.0},
+
+        {0.0, 0.0},
+        {0.0, 1.0},
     };
 
-    r.vertexPointer(pp, 4);
-    r.texcoordPointer(tt, 4);
+    r.vertexPointer(pp, 6);
+    r.texcoordPointer(tt, 6);
     r.texture(&texture);
 
+    //r.transform(rotate(1.f, 0.f, 1.f, 0.f));
     r.render(POINTS);
-    r.transform(rotate(1.f, 1.f, 0.f, 0.f));
     r.render(TRIANGLE_STRIP);
     //r.render(LINE_LOOP);
 
