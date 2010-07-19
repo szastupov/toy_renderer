@@ -4,18 +4,9 @@
 
 #include "canvas.h"
 
-void Canvas::color(uint8_t r, uint8_t g, uint8_t b)
+void Canvas::setColor(uint8_t r, uint8_t g, uint8_t b)
 {
     m_color = m_surface.mapRGB(r, g, b);
-}
-
-void Canvas::plot(int x, int y)
-{
-    if (x < 0 || x > m_surface.width() ||
-        y < 0 || y > m_surface.height())
-        return;
-
-    m_surface.set(x, y, m_color);
 }
 
 void Canvas::plot(int x, int y, int z, uint32_t color)
@@ -28,6 +19,11 @@ void Canvas::plot(int x, int y, int z, uint32_t color)
         m_surface.set(x, y, color);
         m_zBuffer[y*m_surface.height()+x] = z;
     }
+}
+
+void Canvas::point(int x, int y, int z)
+{
+    plot(x, y, z, m_color);
 }
 
 void Canvas::line(int x1, int y1, int x2, int y2)
@@ -55,8 +51,9 @@ void Canvas::line(int x1, int y1, int x2, int y2)
     float dy = (y2-y1)/dx;
     float y = y1;
 
+    // FIXME: z
     for (int x = x1; x <= x2; x++) {
-        plot(x, y);
+        plot(x, y, 0, m_color);
         y += dy;
     }
 }
@@ -64,13 +61,13 @@ void Canvas::line(int x1, int y1, int x2, int y2)
 void Canvas::straightLineX(int x1, int x2, int y)
 {
     for (int x = x1; x <= x2; x++)
-        plot(x, y);
+        plot(x, y, 0, m_color);
 }
 
 void Canvas::straightLineY(int y1, int y2, int x)
 {
     for (int y = y1; y <= y2; y++)
-        plot(x, y);
+        plot(x, y, 0, m_color);
 }
 
 // UP_DOWN - for flat bottom
@@ -129,7 +126,7 @@ void Canvas::scanlineTriangle(const Vertex vt[3], int dir)
             vr += dvr;
         }
     } else {
-        // TODO: Add color interpolation
+        // TODO: Add color and z interpolation
         float vx[3];
         for (int i = 0; i < 3; i++)
             vx[i] = vt[idx[i]][0];

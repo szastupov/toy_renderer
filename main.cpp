@@ -26,8 +26,9 @@ class Renderer {
     {
         for (unsigned i = 0; i < m_vertices.size(); i++) {
             vec4f dot = m_trans * m_vertices[i];
+            int z = dot.z();
             dot /= dot.w();
-            m_canvas.plot(dot.x(), dot.y());
+            m_canvas.point(dot.x(), dot.y(), z);
         }
     }
 
@@ -73,8 +74,8 @@ class Renderer {
             vt[n][1] = pos.y();
             vt[n][2] = z;
             if (texmap) {
-                vt[n][3] = (m_texture->width()-1)*m_texcoords[i].x();
-                vt[n][4] = (m_texture->height()-1)*m_texcoords[i].y();
+                vt[n][3] = (m_texture->width()-1)*m_texcoords[i].x(); // u
+                vt[n][4] = (m_texture->height()-1)*m_texcoords[i].y(); // v
             }
 
             if (n < 2)
