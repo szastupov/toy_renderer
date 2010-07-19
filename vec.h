@@ -137,9 +137,9 @@ static T dot(const vec<N, T> &a, const vec<N, T> &b)
 template <typename T>
 static vec<3, T> cross(const vec<3, T> &a, const vec<3, T> &b)
 {
-    return vec<3, T>(a[1]*b[2]-a[2]*b[1],
-                     a[2]*b[0]-a[0]*b[2],
-                     a[0]*b[1]-a[1]*b[0]);
+    return vec3(a[1]*b[2]-a[2]*b[1],
+                a[2]*b[0]-a[0]*b[2],
+                a[0]*b[1]-a[1]*b[0]);
 }
 
 template <size_t N, typename T>
@@ -194,10 +194,13 @@ vec<4, T> vec4(T a, T b, T c, T d)
 static void vec_test()
 {
 #define ASSERT(e) printf("%-40s = %s\n", #e, (e) ? "ok" : "fail");
-    vec2f a(1, 2);
-    vec2f b(2, 4);
-    vec2f c(1, 2);
-    vec2f d(-1, -2);
+    vec2f a = vec2(1, 2);
+    vec2f b = vec2(2, 4);
+    vec2f c = vec2(1, 2);
+    vec2f d = vec2(-1, -2);
+    vec3f n1 = vec3(1.f, 0.f, 0.f);
+    vec3f n2 = vec3(0.f, 1.f, 0.f);
+    vec3f n3 = vec3(0.f, 0.f, 1.f);
 
     ASSERT(a != b);
     ASSERT(a == c);
@@ -208,8 +211,9 @@ static void vec_test()
     ASSERT(a[0] == 1 && a[1] == 2);
     ASSERT(a[0] == a.x() && a[1] == a.y());
     ASSERT(b.length() != 0);
-    ASSERT(b.normalized() < vec2f(1, 1));
+    ASSERT(b.normalized() < vec2(1.f, 1.f));
     ASSERT(dot(a, b) == 10);
+    ASSERT(cross(n1, n2) == n3);
 
 #undef ASSERT
 }

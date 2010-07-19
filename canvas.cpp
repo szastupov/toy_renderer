@@ -148,7 +148,7 @@ void Canvas::scanlineTriangle(const Vertex vt[3], int dir)
     }
 }
 
-static Vertex lerp(const Vertex &a, const Vertex &b, int y)
+static Vertex lerpY(const Vertex &a, const Vertex &b, int y)
 {
     Vertex d = b-a;
     return a+(d/d.y())*y;
@@ -156,7 +156,7 @@ static Vertex lerp(const Vertex &a, const Vertex &b, int y)
 
 static bool cmpY(const Vertex &a, const Vertex &b)
 {
-    return a[1] < b[1];
+    return a.y() < b.y();
 }
 
 void Canvas::triangle(const Vertex vs[3])
@@ -177,7 +177,7 @@ void Canvas::triangle(const Vertex vs[3])
         Vertex vh[3];
 
         int hy = vt[1].y();
-        Vertex h = lerp(vt[0], vt[2], hy);
+        Vertex h = lerpY(vt[0], vt[2], hy);
         h[1] = hy;
 
         vh[0] = vt[0];
