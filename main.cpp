@@ -66,10 +66,12 @@ class Renderer {
              i++, n++)
         {
             vec4f pos = m_trans * m_vertices[i];
+            float z = pos.z();
             pos /= pos.w();
 
             vt[n].x = pos.x();
             vt[n].y = pos.y();
+            vt[n].z = z;
             if (texmap) {
                 vt[n].u = (m_texture->width()-1)*m_texcoords[i].x();
                 vt[n].v = (m_texture->height()-1)*m_texcoords[i].y();
