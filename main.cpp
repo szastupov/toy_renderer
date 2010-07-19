@@ -56,7 +56,7 @@ class Renderer {
     void drawTriangleStrip()
     {
         bool texmap = m_texture &&
-            m_vertices.size() == m_texcoords.size();
+            m_vertices.size() <= m_texcoords.size();
 
         Vertex vt[3];
         memset(&vt, 0, sizeof(vt));
@@ -69,12 +69,12 @@ class Renderer {
             float z = pos.z();
             pos /= pos.w();
 
-            vt[n].x = pos.x();
-            vt[n].y = pos.y();
-            vt[n].z = z;
+            vt[n][0] = pos.x();
+            vt[n][1] = pos.y();
+            vt[n][2] = z;
             if (texmap) {
-                vt[n].u = (m_texture->width()-1)*m_texcoords[i].x();
-                vt[n].v = (m_texture->height()-1)*m_texcoords[i].y();
+                vt[n][3] = (m_texture->width()-1)*m_texcoords[i].x();
+                vt[n][4] = (m_texture->height()-1)*m_texcoords[i].y();
             }
 
             if (n < 2)
@@ -107,14 +107,14 @@ public:
     {
         m_vertices.clear();
         for (int i = 0; i < count; i++)
-            m_vertices.push_back(vec4f(pp[i][0], pp[i][1], pp[i][2], 1));
+            m_vertices.push_back(vec4(pp[i][0], pp[i][1], pp[i][2], 1.f));
     }
 
     void texcoordPointer(const float tt[][2], int count)
     {
         m_texcoords.clear();
         for (int i = 0; i < count; i++)
-            m_texcoords.push_back(vec2f(tt[i][0], tt[i][1]));
+            m_texcoords.push_back(vec2(tt[i][0], tt[i][1]));
     }
 
     void texture(const Pixman *texture)
@@ -204,7 +204,7 @@ int main(int argc, char **argv)
         {0.5, 0.5, 0},
 
         {0.5, 0.5, 1.0},
-        {-0.5, 0.5, 1.0}
+        {0.5, -0.5, 1.0}
     };
 
     float tt[][2] = {
@@ -221,7 +221,7 @@ int main(int argc, char **argv)
     r.texcoordPointer(tt, 6);
     r.texture(&texture);
 
-    //r.transform(rotate(1.f, 0.f, 1.f, 0.f));
+    r.transform(rotate(-1.f, 1.f, 0.f, 0.f));
     r.render(POINTS);
     r.render(TRIANGLE_STRIP);
     //r.render(LINE_LOOP);

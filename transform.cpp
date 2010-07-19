@@ -64,7 +64,7 @@ Matrix<3, 3, T> skew(const vec<3, T> &v)
 template <typename T>
 Matrix<4, 4, T> rotate(T a, T x, T y, T z)
 {
-    vec<3, T> u(x, y, z, 1);    // axis
+    vec<3, T> u = vec3(x, y, z);    // axis
     u.normalize();
 
     Matrix<3, 3, T> P = outer(u, u);

@@ -7,13 +7,8 @@
 
 typedef std::numeric_limits<int32_t> nl32;
 
-struct Vertex {
-    float x;
-    float y;
-    float z;
-    float u;
-    float v;
-};
+// (x, t, z, u, v)
+typedef vec<5, float> Vertex;
 
 class Canvas {
     Pixman &m_surface;
@@ -31,7 +26,7 @@ public:
         , m_texture(NULL)
         , m_color(m_surface.mapRGB(0xFF, 0x00, 0x00))
     {
-        std::fill(m_zBuffer, m_zBuffer+m_zBufferSize, nl32::max());
+        std::fill_n(m_zBuffer, m_zBufferSize, nl32::max());
     }
 
     void color(uint8_t r, uint8_t g, uint8_t b);

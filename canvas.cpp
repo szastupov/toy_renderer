@@ -93,17 +93,17 @@ void Canvas::scanlineTriangle(const Vertex vt[3], int dir)
         r0 = 2;
     }
 
-    float dy = vt[idx[2]].y - vt[idx[0]].y;
+    float dy = vt[idx[2]].y() - vt[idx[0]].y();
 
     if (m_texture) {
         // Prepare vectors for interpolation
         vec4f v[3];
         for (int i = 0; i < 3; i++) {
             int j = idx[i];
-            v[i][0] = vt[j].x;
-            v[i][1] = vt[j].u;
-            v[i][2] = vt[j].v;
-            v[i][3] = vt[j].z;
+            v[i][0] = vt[j][0]; // x
+            v[i][1] = vt[j][3]; // u
+            v[i][2] = vt[j][4]; // v
+            v[i][3] = vt[j][2]; // z
         }
         if (v[1].x() > v[2].x())
             std::swap(v[1][0], v[2][0]);
@@ -114,14 +114,14 @@ void Canvas::scanlineTriangle(const Vertex vt[3], int dir)
         vec4f vr = v[r0];           // Right interpolant
 
         // Interpolate me baby!
-        for (int y = vt[0].y; y <= vt[2].y; y++) {
+        for (int y = vt[0].y(); y <= vt[2].y(); y++) {
             vec4f ddv = vr-vl;
             // Change in uvz
-            vec3f duvz(ddv[1], ddv[2], ddv[3]);
+            vec3f duvz = vec3(ddv[1], ddv[2], ddv[3]);
             duvz /= ddv.x();
-            vec3f uvz(vl[1], vl[2], vl[3]);
+            vec3f uvz = vec3(vl[1], vl[2], vl[3]);
             for (int x = vl.x(); x <= vr.x(); x++) {
-                int z = uvz[2]+0.5f;
+                int z = uvz[2]*100;
                 plot(x, y, z, m_texture->get(uvz[0], uvz[1]));
                 uvz += duvz;
             }
@@ -132,55 +132,31 @@ void Canvas::scanlineTriangle(const Vertex vt[3], int dir)
         // TODO: Add color interpolation
         float vx[3];
         for (int i = 0; i < 3; i++)
-            vx[i] = vt[idx[i]].x;
+            vx[i] = vt[idx[i]][0];
 
         if (vx[1] > vx[2])
             std::swap(vx[1], vx[2]);
 
-        vec2f dx((vx[1]-vx[0])/dy,
-                 (vx[2]-vx[0])/dy);
-        vec2f x(vx[l0], vx[r0]);
+        vec2f dx = vec2((vx[1]-vx[0])/dy,
+                        (vx[2]-vx[0])/dy);
+        vec2f x = vec2(vx[l0], vx[r0]);
 
-        for (int y = vt[0].y; y <= vt[2].y; y++) {
+        for (int y = vt[0][1]; y <= vt[2][1]; y++) {
             straightLineX(x[0], x[1], y);
             x += dx;
         }
     }
 }
 
-// Cleanup ths getN functions
-
-static float getX(const Vertex &a, const Vertex &b, int y)
+static Vertex lerp(const Vertex &a, const Vertex &b, int y)
 {
-    float dy = b.y-a.y;
-    float dx = b.x-a.x;
-    return (float)(y-a.y) / (dy/dx) + a.x;
-}
-
-static float getU(const Vertex &a, const Vertex &b, int y)
-{
-    float dy = b.y-a.y;
-    float du = b.u-a.u;
-    return (float)(y-a.y) / (dy/du) + a.u;
-}
-
-static float getV(const Vertex &a, const Vertex &b, int y)
-{
-    float dy = b.y-a.y;
-    float dv = b.v-a.v;
-    return (float)(y-a.y) / (dy/dv) + a.v;
-}
-
-static float getZ(const Vertex &a, const Vertex &b, int y)
-{
-    float dy = b.y-a.y;
-    float dz = b.z-a.z;
-    return (float)(y-a.y) / (dy/dz) + a.z;
+    Vertex d = b-a;
+    return a+(d/d.y())*y;
 }
 
 static bool cmpY(const Vertex &a, const Vertex &b)
 {
-    return a.y < b.y;
+    return a[1] < b[1];
 }
 
 void Canvas::triangle(const Vertex vs[3])
@@ -189,25 +165,20 @@ void Canvas::triangle(const Vertex vs[3])
     std::copy(vs, vs+3, vt);
     std::sort(vt, vt+3, cmpY);
 
-    if (vt[0].y == vt[2].y)
+    if (vt[0].y() == vt[2].y())
         return;                 // Empty triangle
 
-    if (vt[0].y == vt[1].y)
+    if (vt[0].y() == vt[1].y())
         scanlineTriangle(vt, DOWN_UP);
-    else if (vt[1].y == vt[2].y)
+    else if (vt[1][1] == vt[2][1])
         scanlineTriangle(vt, UP_DOWN);
     else {
         // Make two simple triangles
         Vertex vh[3];
 
-        int hy = vt[1].y;
-        Vertex h = {
-            getX(vt[0], vt[2], hy),
-            hy,
-            getZ(vt[0], vt[2], hy),
-            getU(vt[0], vt[2], hy),
-            getV(vt[0], vt[2], hy)
-        };
+        int hy = vt[1].y();
+        Vertex h = lerp(vt[0], vt[2], hy);
+        h[1] = hy;
 
         vh[0] = vt[0];
         vh[1] = vt[1];

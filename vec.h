@@ -22,31 +22,7 @@ public:
         vec_for_each(i) p[i] = 0;
     }
 
-	vec(T x, T y)
-	{
-		assert(N >= 2);
-		p[0] = x;
-		p[1] = y;
-	}
-
-	vec(T x, T y, T z)
-	{
-		assert(N >= 3);
-		p[0] = x;
-		p[1] = y;
-		p[2] = z;
-	}
-
-    vec(T x, T y, T z, T w)
-	{
-		assert(N >= 3);
-		p[0] = x;
-		p[1] = y;
-		p[2] = z;
-        p[3] = w;
-	}
-
-	vec(const vec& src)
+    vec(const vec& src)
 	{
         vec_for_each(i) p[i] = src[i];
 	}
@@ -183,6 +159,36 @@ typedef vec<2, float> vec2f;
 typedef vec<3, float> vec3f;
 typedef vec<4, float> vec4f;
 typedef vec<2, int> vec2i;
+
+template <typename T>
+vec<2, T> vec2(T a, T b)
+{
+    vec<2, T> r;
+    r[0] = a;
+    r[1] = b;
+    return r;
+}
+
+template <typename T>
+vec<3, T> vec3(T a, T b, T c)
+{
+    vec<3, T> r;
+    r[0] = a;
+    r[1] = b;
+    r[2] = c;
+    return r;
+}
+
+template <typename T>
+vec<4, T> vec4(T a, T b, T c, T d)
+{
+    vec<4, T> r;
+    r[0] = a;
+    r[1] = b;
+    r[2] = c;
+    r[3] = d;
+    return r;
+}
 
 #ifdef VEC_TEST
 static void vec_test()
