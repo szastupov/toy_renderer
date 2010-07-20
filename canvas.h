@@ -37,7 +37,7 @@ public:
 
     void point(int x, int y, int z);
     void plot(int x, int y, int z, uint32_t color);
-    void line(int x1, int y1, int x2, int y2);
+    void line(const Vertex &a, const Vertex &b);
     void straightLineX(int x1, int x2, int y);
     void straightLineY(int y1, int y2, int x);
     void triangle(const Vertex vs[3]);

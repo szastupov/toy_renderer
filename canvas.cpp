@@ -15,7 +15,7 @@ void Canvas::plot(int x, int y, int z, uint32_t color)
         y < 0 || y > m_surface.height())
         return;
 
-    if (z < m_zBuffer[y*m_surface.height()+x]) {
+    if (z <= m_zBuffer[y*m_surface.height()+x]) {
         m_surface.set(x, y, color);
         m_zBuffer[y*m_surface.height()+x] = z;
     }
@@ -26,38 +26,43 @@ void Canvas::point(int x, int y, int z)
     plot(x, y, z, m_color);
 }
 
-void Canvas::line(int x1, int y1, int x2, int y2)
+static bool cmpY(const Vertex &a, const Vertex &b)
 {
-    if (y1 == y2) {
-        if (x1 > x2)
-            std::swap(x1, x2);
-        straightLineX(x1, x2, y1);
-        return;
+    return a.y() < b.y();
+}
+
+static bool cmpX(const Vertex &a, const Vertex &b)
+{
+    return a.x() < b.x();
+}
+
+void Canvas::line(const Vertex &a, const Vertex &b)
+{
+    Vertex v[2] = { a, b };
+
+    if (a.y() == b.y()) {
+        std::sort(v, v+2, cmpX);
+        return straightLineX(v[0].x(), v[1].x(), a.y());
     }
 
-    if (x1 == x2) {
-        if (y1 > y2)
-            std::swap(y1, y2);
-        straightLineY(y1, y2, x1);
-        return;
+    if (a.x() == b.x()) {
+        std::sort(v, v+2, cmpY);
+        return straightLineY(v[0].y(), v[1].y(), a.x());
     }
 
-    if (x1 > x2) {
-        std::swap(x1, x2);
-        std::swap(y1, y2);
-    }
-
-    float dx = x2-x1;
-    float dy = (y2-y1)/dx;
-    float y = y1;
+    std::sort(v, v+2, cmpX);
+    float dx = v[1].x()-v[0].x();
+    float dy = (v[1].y()-v[0].y())/dx;
+    float y = v[0].y();
 
     // FIXME: z
-    for (int x = x1; x <= x2; x++) {
+    for (int x = v[0].x(); x <= v[1].x(); x++) {
         plot(x, y, 0, m_color);
         y += dy;
     }
 }
 
+// FIXME The next two functions should use z-buffer too
 void Canvas::straightLineX(int x1, int x2, int y)
 {
     for (int x = x1; x <= x2; x++)
@@ -76,6 +81,7 @@ enum { UP_DOWN, DOWN_UP };
 
 void Canvas::scanlineTriangle(const Vertex vt[3], int dir)
 {
+    // Indeces specify requred order
     static const int idx1[3] = { 0, 1, 2};
     static const int idx2[3] = { 2, 0, 1};
     const int *idx;
@@ -92,56 +98,38 @@ void Canvas::scanlineTriangle(const Vertex vt[3], int dir)
 
     float dy = vt[idx[2]].y() - vt[idx[0]].y();
 
-    if (m_texture) {
-        // Prepare vectors for interpolation
-        vec4f v[3];
-        for (int i = 0; i < 3; i++) {
-            int j = idx[i];
-            v[i][0] = vt[j][0]; // x
-            v[i][1] = vt[j][3]; // u
-            v[i][2] = vt[j][4]; // v
-            v[i][3] = vt[j][2]; // z
+    // Prepare vectors for interpolation
+    vec4f v[3];
+    for (int i = 0; i < 3; i++) {
+        int j = idx[i];
+        v[i][0] = vt[j][0]; // x
+        v[i][1] = vt[j][3]; // u
+        v[i][2] = vt[j][4]; // v
+        v[i][3] = vt[j][2]; // z
+    }
+    if (v[1].x() > v[2].x())
+        std::swap(v[1][0], v[2][0]);
+
+    vec4f dvl = (v[1]-v[0])/dy; // Change in left line
+    vec4f dvr = (v[2]-v[0])/dy; // Change in right line
+    vec4f vl = v[l0];           // Left interpolant
+    vec4f vr = v[r0];           // Right interpolant
+
+    // Interpolate me baby!
+    for (int y = vt[0].y(); y <= vt[2].y(); y++) {
+        vec4f ddv = vr-vl;
+        // Change in uvz
+        vec3f duvz = vec3(ddv[1], ddv[2], ddv[3]);
+        duvz /= ddv.x();
+        vec3f uvz = vec3(vl[1], vl[2], vl[3]);
+        for (int x = vl.x(); x <= vr.x(); x++) {
+            int z = uvz[2]*100;
+            // FIXME: remove branch here
+            plot(x, y, z, m_texture ? m_texture->get(uvz[0], uvz[1]) : m_color);
+            uvz += duvz;
         }
-        if (v[1].x() > v[2].x())
-            std::swap(v[1][0], v[2][0]);
-
-        vec4f dvl = (v[1]-v[0])/dy; // Change in left line
-        vec4f dvr = (v[2]-v[0])/dy; // Change in right line
-        vec4f vl = v[l0];           // Left interpolant
-        vec4f vr = v[r0];           // Right interpolant
-
-        // Interpolate me baby!
-        for (int y = vt[0].y(); y <= vt[2].y(); y++) {
-            vec4f ddv = vr-vl;
-            // Change in uvz
-            vec3f duvz = vec3(ddv[1], ddv[2], ddv[3]);
-            duvz /= ddv.x();
-            vec3f uvz = vec3(vl[1], vl[2], vl[3]);
-            for (int x = vl.x(); x <= vr.x(); x++) {
-                int z = uvz[2]*100;
-                plot(x, y, z, m_texture->get(uvz[0], uvz[1]));
-                uvz += duvz;
-            }
-            vl += dvl;
-            vr += dvr;
-        }
-    } else {
-        // TODO: Add color and z interpolation
-        float vx[3];
-        for (int i = 0; i < 3; i++)
-            vx[i] = vt[idx[i]][0];
-
-        if (vx[1] > vx[2])
-            std::swap(vx[1], vx[2]);
-
-        vec2f dx = vec2((vx[1]-vx[0])/dy,
-                        (vx[2]-vx[0])/dy);
-        vec2f x = vec2(vx[l0], vx[r0]);
-
-        for (int y = vt[0][1]; y <= vt[2][1]; y++) {
-            straightLineX(x[0], x[1], y);
-            x += dx;
-        }
+        vl += dvl;
+        vr += dvr;
     }
 }
 
@@ -149,11 +137,6 @@ static Vertex lerpY(const Vertex &a, const Vertex &b, int y)
 {
     Vertex d = b-a;
     return a+(d/d.y())*y;
-}
-
-static bool cmpY(const Vertex &a, const Vertex &b)
-{
-    return a.y() < b.y();
 }
 
 void Canvas::triangle(const Vertex vs[3])
@@ -167,10 +150,10 @@ void Canvas::triangle(const Vertex vs[3])
 
     if (vt[0].y() == vt[1].y())
         scanlineTriangle(vt, DOWN_UP);
-    else if (vt[1][1] == vt[2][1])
+    else if (vt[1].y() == vt[2].y())
         scanlineTriangle(vt, UP_DOWN);
     else {
-        // Make two simple triangles
+        // Make two "flat" triangles
         Vertex vh[3];
 
         int hy = vt[1].y();

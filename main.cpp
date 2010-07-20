@@ -21,6 +21,7 @@ class Renderer {
     Matrix4f m_viewport;
     Matrix4f m_model;
     Matrix4f m_trans;
+    bool m_wire;
 
     void drawPoints()
     {
@@ -34,30 +35,32 @@ class Renderer {
 
     void drawLines(bool loop = true)
     {
-        vec2i p0, p1, p2;
+        Vertex v0, v1, v2;
 
         for (unsigned i = 0; i < m_vertices.size(); i++) {
-            vec4f dot = m_trans * m_vertices[i];
-            dot /= dot.w();
+            vec4f t = m_trans * m_vertices[i];
+            vec3f pos = t/t.w();
+            pos[2] = t.z();
 
             if (i == 0) {
-                p0 = p1 = dot;
+                v0 = v1 = pos;
                 continue;
             }
 
-            p2 = dot;
-            m_canvas.line(p1.x(), p1.y(), p2.x(), p2.y());
-            p1 = p2;
+            v2 = pos;
+            m_canvas.line(v1, v2);
+            v1 = v2;
 
             if (loop && (i+1 == m_vertices.size()))
-                m_canvas.line(p1.x(), p1.y(), p0.x(), p0.y());
+                m_canvas.line(v1, v0);
         }
     }
 
     void drawTriangleStrip()
     {
-        bool texmap = m_texture &&
-            m_vertices.size() <= m_texcoords.size();
+        bool texmap = m_texture
+            && !m_wire
+            && m_vertices.size() <= m_texcoords.size();
 
         Vertex vt[3];
         memset(&vt, 0, sizeof(vt));
@@ -81,7 +84,13 @@ class Renderer {
             if (n < 2)
                 continue;
 
-            m_canvas.triangle(vt);
+            if (m_wire) {
+                m_canvas.line(vt[0], vt[1]);
+                m_canvas.line(vt[1], vt[2]);
+                m_canvas.line(vt[2], vt[0]);
+            } else
+                m_canvas.triangle(vt);
+
             vt[0] = vt[1];
             vt[1] = vt[2];
             n = 1;
@@ -92,6 +101,7 @@ public:
     Renderer(Canvas &canvas)
         : m_canvas(canvas)
         , m_texture(NULL)
+        , m_wire(false)
     {
         float sx = m_canvas.width()/2;
         float sy = m_canvas.height()/2;
@@ -122,6 +132,11 @@ public:
     {
         m_texture = texture;
         m_canvas.texture(texture);
+    }
+
+    void wire(bool enable)
+    {
+        m_wire = enable;
     }
 
     void render(prim_t mode)
@@ -205,7 +220,7 @@ int main(int argc, char **argv)
         {0.5, 0.5, 0},
 
         {0.5, 0.5, 1.0},
-        {0.5, -0.5, 1.0}
+        {-0.5, 0.5, 1.0}
     };
 
     float tt[][2] = {
@@ -221,13 +236,13 @@ int main(int argc, char **argv)
     r.vertexPointer(pp, 6);
     r.texcoordPointer(tt, 6);
     r.texture(&texture);
+    r.wire(true);
 
-    r.transform(rotate(-1.f, 1.f, 0.f, 0.f));
-    r.render(POINTS);
+    //r.transform(rotate(-1.f, 1.f, 0.f, 0.f));
     r.render(TRIANGLE_STRIP);
+    //r.render(POINTS);
     //r.render(LINE_LOOP);
 
-    //scaling_copy(pscreen, screen->w/2, screen->h/2, texture);
     SDL_Flip(screen);
 
     bool run = true;
