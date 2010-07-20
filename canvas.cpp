@@ -119,8 +119,7 @@ void Canvas::scanlineTriangle(const Vertex vt[3], int dir)
     for (int y = vt[0].y(); y <= vt[2].y(); y++) {
         vec4f ddv = vr-vl;
         // Change in uvz
-        vec3f duvz = vec3(ddv[1], ddv[2], ddv[3]);
-        duvz /= ddv.x();
+        vec3f duvz = vec3(ddv[1], ddv[2], ddv[3])/ddv.x();
         vec3f uvz = vec3(vl[1], vl[2], vl[3]);
         for (int x = vl.x(); x <= vr.x(); x++) {
             int z = uvz[2]*100;
