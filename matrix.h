@@ -3,6 +3,7 @@
 
 #include "vec.h"
 #include <cstdio>
+#include <algorithm>
 
 #define matrix_for_each(j)                      \
     for (size_t j = 0; j < NJ; j++)
@@ -15,7 +16,6 @@ class Matrix
 public:
     Matrix()
     {
-        loadIdentity();
     }
 
     Matrix(const Matrix &m)
@@ -29,8 +29,8 @@ public:
     {
         assert(NI >= SI);
         assert(NJ >= SJ);
-
         loadIdentity();
+
         for (size_t j = 0; j < SJ; j++)
             for (size_t i = 0; i < SI; i++)
                 p[j][i] = s[j][i];
@@ -91,7 +91,33 @@ public:
             p[j][j] = 1;
         }
     }
+
+    // in-place transpose
+    void transpose()
+    {
+        assert(NI == NJ);
+        for (size_t j = 0; j < NJ-1; j++)
+            for (size_t i = j+1; i < NI; i++)
+                std::swap(p[j][i], p[i][j]);
+    }
 };
+
+template <size_t N, typename T>
+Matrix<N, N, T> transpose(const Matrix<N, N, T> &src)
+{
+    Matrix<N, N, T> res = src;
+    res.transpose();
+    return res;
+}
+
+template <size_t N, typename T>
+vec<N, T> transpose(const Matrix<N, 1, T> &src)
+{
+    vec<N, T> res;
+    for (size_t i = 0; i < N; i++)
+        res[i] = src[i][0];
+    return res;
+}
 
 template <size_t LR, size_t LC, size_t RC, typename T>
 Matrix<LR, RC, T> operator * (const Matrix<LR, LC, T> &ml,

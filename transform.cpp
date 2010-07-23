@@ -30,6 +30,7 @@ template <typename T>
 Matrix<4, 4, T> scale(T sx, T sy, T sz)
 {
     Matrix<4, 4, T> m;
+    m.loadIdentity();
     m[0][0] = sx;
     m[1][1] = sy;
     m[2][2] = sz;
@@ -42,6 +43,7 @@ template <typename T>
 Matrix<4, 4, T> translate(T tx, T ty, T tz)
 {
     Matrix<4, 4, T> m;
+    m.loadIdentity();
     m[3][0] = tx;
     m[3][1] = ty;
     m[3][2] = tz;
@@ -70,6 +72,7 @@ Matrix<4, 4, T> rotate(T a, T x, T y, T z)
     Matrix<3, 3, T> P = outer(u, u);
     Matrix<3, 3, T> Q = skew(u);
     Matrix<3, 3, T> I;
+    I.loadIdentity();
 
     Matrix<3, 3, T> R = P+(I-P)*tcos(a)+Q*sin(a);
 

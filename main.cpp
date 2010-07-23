@@ -106,6 +106,7 @@ public:
         float sx = m_canvas.width()/2;
         float sy = m_canvas.height()/2;
 
+        m_model.loadIdentity();
         m_viewport = scale(sx, -sy, 1.0f) * translate(1.0f, -1.0f, 0.0f);
     }
 
@@ -142,6 +143,7 @@ public:
     void render(prim_t mode)
     {
         Matrix4f proj;
+        proj.loadIdentity();
         proj[2][3] = 1;
         proj[3][3] = 0;
         m_trans = m_viewport * proj * translate(0.f, 0.f, 1.f) * m_model;
@@ -236,7 +238,7 @@ int main(int argc, char **argv)
     r.vertexPointer(pp, 6);
     r.texcoordPointer(tt, 6);
     r.texture(&texture);
-    r.wire(true);
+    //r.wire(true);
 
     //r.transform(rotate(-1.f, 1.f, 0.f, 0.f));
     r.render(TRIANGLE_STRIP);
