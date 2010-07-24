@@ -159,6 +159,7 @@ typedef vec<2, float> vec2f;
 typedef vec<3, float> vec3f;
 typedef vec<4, float> vec4f;
 typedef vec<2, int> vec2i;
+typedef vec<3, int> vec3i;
 
 template <typename T>
 vec<2, T> vec2(T a, T b)

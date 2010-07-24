@@ -11,12 +11,13 @@
 #include "transform.h"
 #include "canvas.h"
 
-typedef enum { TRIANGLE_STRIP, LINE_STRIP, LINE_LOOP, POINTS } prim_t;
+typedef enum { TRIANGLES, TRIANGLES_INDEXED, LINE_STRIP, LINE_LOOP, POINTS } prim_t;
 
 class Renderer {
     Canvas &m_canvas;
     std::vector<vec4f> m_vertices;
     std::vector<vec2f> m_texcoords;
+    std::vector<vec3i> m_indeces;
     const Pixman *m_texture;
     Matrix4f m_viewport;
     Matrix4f m_model;
@@ -56,44 +57,59 @@ class Renderer {
         }
     }
 
-    void drawTriangleStrip()
+    void setVertex(Vertex &vt, size_t n)
     {
         bool texmap = m_texture
             && !m_wire
             && m_vertices.size() <= m_texcoords.size();
 
-        Vertex vt[3];
-        memset(&vt, 0, sizeof(vt));
+        vec4f pos = m_trans * m_vertices[n];
+        float z = pos.z();
+        pos /= pos.w();
 
-        for (unsigned i = 0, n = 0;
-             i < m_vertices.size();
-             i++, n++)
-        {
-            vec4f pos = m_trans * m_vertices[i];
-            float z = pos.z();
-            pos /= pos.w();
+        vt[0] = pos.x();
+        vt[1] = pos.y();
+        vt[2] = z;
+        if (texmap) {
+            vt[3] = (m_texture->width()-1)*m_texcoords[n].x(); // u
+            vt[4] = (m_texture->height()-1)*m_texcoords[n].y(); // v
+        }
+    }
 
-            vt[n][0] = pos.x();
-            vt[n][1] = pos.y();
-            vt[n][2] = z;
-            if (texmap) {
-                vt[n][3] = (m_texture->width()-1)*m_texcoords[i].x(); // u
-                vt[n][4] = (m_texture->height()-1)*m_texcoords[i].y(); // v
-            }
+    void drawTriangle(const Vertex vt[3])
+    {
+        if (m_wire) {
+            m_canvas.line(vt[0], vt[1]);
+            m_canvas.line(vt[1], vt[2]);
+            m_canvas.line(vt[2], vt[0]);
+        } else
+            m_canvas.triangle(vt);
+    }
 
-            if (n < 2)
-                continue;
+    void drawTriangles()
+    {
+        size_t n = m_vertices.size();
+        assert(n % 3 == 0);
 
-            if (m_wire) {
-                m_canvas.line(vt[0], vt[1]);
-                m_canvas.line(vt[1], vt[2]);
-                m_canvas.line(vt[2], vt[0]);
-            } else
-                m_canvas.triangle(vt);
+        for (size_t i = 0; i < n; i += 3) {
+            Vertex vt[3];
+            memset(&vt, 0, sizeof(vt));
+            for (int j = 0; j < 3; j++)
+                setVertex(vt[j], i+j);
+            drawTriangle(vt);
+        }
+    }
 
-            vt[0] = vt[1];
-            vt[1] = vt[2];
-            n = 1;
+    void drawTrianglesIndexed()
+    {
+        size_t n = m_indeces.size();
+
+        for (size_t i = 0; i < n; i++) {
+            Vertex vt[3];
+            memset(&vt, 0, sizeof(vt));
+            for (int j = 0; j < 3; j++)
+                setVertex(vt[j], m_indeces[i][j]);
+            drawTriangle(vt);
         }
     }
 
@@ -129,6 +145,13 @@ public:
             m_texcoords.push_back(vec2(tt[i][0], tt[i][1]));
     }
 
+    void indexPointer(const int ii[][3], int count)
+    {
+        m_indeces.clear();
+        for (int i = 0; i < count; i++)
+            m_indeces.push_back(vec3(ii[i][0], ii[i][1], ii[i][2]));
+    }
+
     void texture(const Pixman *texture)
     {
         m_texture = texture;
@@ -149,8 +172,11 @@ public:
         m_trans = m_viewport * proj * translate(0.f, 0.f, 1.f) * m_model;
 
         switch (mode) {
-        case TRIANGLE_STRIP:
-            drawTriangleStrip();
+        case TRIANGLES:
+            drawTriangles();
+            break;
+        case TRIANGLES_INDEXED:
+            drawTrianglesIndexed();
             break;
         case LINE_LOOP:
             drawLines();
@@ -202,6 +228,62 @@ Pixman sdlPixman(SDL_Surface *sdlSurface)
 }
 
 
+void testTriangles(Renderer &r)
+{
+    float pp[][3] = {
+        {-0.5, -0.5, 0},
+        {-0.5, 0.5, 0},
+        {0.5, -0.5, 0},
+
+        {-0.5, 0.5, 0},
+        {0.5, -0.5, 0},
+        {0.5, 0.5, 0},
+    };
+
+    float tt[][2] = {
+        {0.0, 0.0},
+        {0.0, 1.0},
+        {1.0, 0.0},
+
+        {0.0, 1.0},
+        {1.0, 0.0},
+        {1.0, 1.0},
+    };
+
+    r.vertexPointer(pp, 6);
+    r.texcoordPointer(tt, 6);
+    r.render(TRIANGLES);
+}
+
+
+void testTrianglesIndexed(Renderer &r)
+{
+    float pp[][3] = {
+        {-0.5, -0.5, 0},
+        {-0.5, 0.5, 0},
+        {0.5, -0.5, 0},
+        {0.5, 0.5, 0},
+    };
+
+    float tt[][2] = {
+        {0.0, 0.0},
+        {0.0, 1.0},
+        {1.0, 0.0},
+        {1.0, 1.0},
+    };
+
+    int ii[][3] = {
+        { 0, 1, 2 },
+        { 1, 2, 3 }
+    };
+
+    r.vertexPointer(pp, 4);
+    r.texcoordPointer(tt, 4);
+    r.indexPointer(ii, 2);
+    r.render(TRIANGLES_INDEXED);
+}
+
+
 int main(int argc, char **argv)
 {
     SDL_Init(SDL_INIT_VIDEO);
@@ -213,37 +295,12 @@ int main(int argc, char **argv)
 
     Canvas canvas(pscreen);
     Renderer r(canvas);
-    // Example data
-
-    float pp[][3] = {
-        {-0.5, -0.5, 0},
-        {-0.5, 0.5, 0},
-        {0.5, -0.5, 0},
-        {0.5, 0.5, 0},
-
-        {0.5, 0.5, 1.0},
-        {-0.5, 0.5, 1.0}
-    };
-
-    float tt[][2] = {
-        {0.0, 0.0},
-        {0.0, 1.0},
-        {1.0, 0.0},
-        {1.0, 1.0},
-
-        {0.0, 0.0},
-        {0.0, 1.0},
-    };
-
-    r.vertexPointer(pp, 6);
-    r.texcoordPointer(tt, 6);
     r.texture(&texture);
     //r.wire(true);
 
-    //r.transform(rotate(-1.f, 1.f, 0.f, 0.f));
-    r.render(TRIANGLE_STRIP);
-    //r.render(POINTS);
-    //r.render(LINE_LOOP);
+    r.transform(rotate(-1.f, 1.f, 0.f, 0.f));
+    //testTriangles(r);
+    testTrianglesIndexed(r);
 
     SDL_Flip(screen);
 
