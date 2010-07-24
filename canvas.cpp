@@ -11,8 +11,8 @@ void Canvas::setColor(uint8_t r, uint8_t g, uint8_t b)
 
 void Canvas::plot(int x, int y, int z, uint32_t color)
 {
-    if (x < 0 || x > m_surface.width() ||
-        y < 0 || y > m_surface.height())
+    if (x < 0 || x >= m_surface.width() ||
+        y < 0 || y >= m_surface.height())
         return;
 
     if (z <= m_zBuffer[y*m_surface.height()+x]) {
@@ -50,15 +50,30 @@ void Canvas::line(const Vertex &a, const Vertex &b)
         return straightLineY(v[0].y(), v[1].y(), a.x());
     }
 
+    bool steep = fabs(v[1].y() - v[0].y()) > fabs(v[1].x() - v[0].x());
+    if (steep) {
+        std::swap(v[0][0], v[0][1]);
+        std::swap(v[1][0], v[1][1]);
+    }
     std::sort(v, v+2, cmpX);
+
     float dx = v[1].x()-v[0].x();
     float dy = (v[1].y()-v[0].y())/dx;
-    float y = v[0].y();
+    float error = 0;
+    int sign = dy > 0 ? 1 : -1;
+    int y = v[0].y();
 
     // FIXME: z
     for (int x = v[0].x(); x <= v[1].x(); x++) {
-        plot(x, y, 0, m_color);
-        y += dy;
+        if (steep)
+            plot(y, x, 0, m_color);
+        else
+            plot(x, y, 0, m_color);
+        error += dy;
+        if (fabs(error) >= 0.5) {
+            y += sign;
+            error -= sign;
+        }
     }
 }
 
@@ -135,7 +150,7 @@ void Canvas::scanlineTriangle(const Vertex vt[3], int dir)
 static Vertex lerpY(const Vertex &a, const Vertex &b, int y)
 {
     Vertex d = b-a;
-    return a+(d/d.y())*y;
+    return a+(d/d.y())*(y-a.y());
 }
 
 void Canvas::triangle(const Vertex vs[3])

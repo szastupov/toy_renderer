@@ -67,8 +67,8 @@ class Renderer {
         float z = pos.z();
         pos /= pos.w();
 
-        vt[0] = pos.x();
-        vt[1] = pos.y();
+        vt[0] = roundf(pos.x());
+        vt[1] = roundf(pos.y());
         vt[2] = z;
         if (texmap) {
             vt[3] = (m_texture->width()-1)*m_texcoords[n].x(); // u
@@ -256,30 +256,25 @@ void testTriangles(Renderer &r)
 }
 
 
-void testTrianglesIndexed(Renderer &r)
+void testBunny(Renderer &r)
 {
-    float pp[][3] = {
-        {-0.5, -0.5, 0},
-        {-0.5, 0.5, 0},
-        {0.5, -0.5, 0},
-        {0.5, 0.5, 0},
-    };
+#include "bunny.h"
+    r.vertexPointer(vertices, sizeof(vertices)/sizeof(vertices[0]));
+    r.indexPointer(indeces, sizeof(indeces)/sizeof(indeces[0]));
+    float s = 7.0f;
+    r.transform(translate(0.f, -0.6f, 0.0f) * scale(s, s, s));
+    r.render(TRIANGLES_INDEXED);
+}
 
-    float tt[][2] = {
-        {0.0, 0.0},
-        {0.0, 1.0},
-        {1.0, 0.0},
-        {1.0, 1.0},
-    };
-
-    int ii[][3] = {
-        { 0, 1, 2 },
-        { 1, 2, 3 }
-    };
-
-    r.vertexPointer(pp, 4);
-    r.texcoordPointer(tt, 4);
-    r.indexPointer(ii, 2);
+void testCube(Renderer &r)
+{
+#include "cube.h"
+    r.vertexPointer(vertices, sizeof(vertices)/sizeof(vertices[0]));
+    r.indexPointer(indeces, sizeof(indeces)/sizeof(indeces[0]));
+    //r.indexPointer(indeces, 1);
+    float s = 0.3f;
+    r.transform(rotate(-1.1f, 1.f, 1.f, 0.f));
+    r.transform(scale(s, s, s));
     r.render(TRIANGLES_INDEXED);
 }
 
@@ -295,12 +290,11 @@ int main(int argc, char **argv)
 
     Canvas canvas(pscreen);
     Renderer r(canvas);
-    r.texture(&texture);
-    //r.wire(true);
+    //r.texture(&texture);
+    r.wire(true);
 
-    r.transform(rotate(-1.f, 1.f, 0.f, 0.f));
-    //testTriangles(r);
-    testTrianglesIndexed(r);
+    //testCube(r);
+    testBunny(r);
 
     SDL_Flip(screen);
 
