@@ -12,6 +12,9 @@ import bpy
 import bpy
 import os
 
+def write_fv(out, v):
+    out.write("\t{ %f, %f, %f },\n" %
+              (v.x, v.y, v.z))
 
 def write_obj(filepath):
     out = file(filepath, 'w')
@@ -42,8 +45,7 @@ def write_obj(filepath):
 
     out.write("static const float vertices[][3] = {\n")
     for vert in mesh.verts:
-        out.write("\t{ %f, %f, %f },\n" %
-                  (vert.co.x, vert.co.y, vert.co.z))
+        write_fv(out, vert.co)
     out.write("};\n\n")
 
     out.write("static const int indeces[][3] = {\n")
@@ -54,8 +56,7 @@ def write_obj(filepath):
 
     out.write("static const float normals[][3] = {\n")
     for vert in mesh.verts:
-        out.write("\t{ %f, %f, %f },\n" %
-                  (vert.no.x, vert.no.y, vert.no.z))
+        write_fv(out, vert.no)
     out.write("};\n")
 
     if editmode:
