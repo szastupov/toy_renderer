@@ -10,6 +10,12 @@ typedef std::numeric_limits<int32_t> nl32;
 // (x, t, z, u, v)
 typedef vec<5, float> Vertex;
 
+struct Material {
+    vec4f ambient;
+    vec4f diffuse;
+    vec4f specular;
+};
+
 class Canvas {
     Pixman &m_surface;
     size_t m_zBufferSize;

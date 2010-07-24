@@ -13,12 +13,35 @@
 
 typedef enum { TRIANGLES, TRIANGLES_INDEXED, LINE_STRIP, LINE_LOOP, POINTS } prim_t;
 
+template <size_t N, typename T>
+struct VertexArray {
+    const T *data;
+    const size_t size;
+    const T* operator[](int i) const
+    {
+        return &data[i*N];
+    }
+};
+
+struct VertexBuffer {
+    VertexArray<3, float> vertices;
+    VertexArray<3, int> indeces;
+    VertexArray<3, float> normals;
+    VertexArray<2, float> texcoords;
+};
+
+static vec4f vec4fp(const float *src)
+{
+    vec4f res;
+    for (int i = 0; i < 3; i++)
+        res[i] = src[i];
+    res[3] = 1;
+    return res;
+}
+
 class Renderer {
     Canvas &m_canvas;
-    std::vector<vec4f> m_vertices;
-    std::vector<vec2f> m_texcoords;
-    std::vector<vec3i> m_indeces;
-    std::vector<vec3f> m_normals;
+    const VertexBuffer *m_vbuffer;
     const Pixman *m_texture;
     Matrix4f m_viewport;
     Matrix4f m_model;
@@ -27,8 +50,8 @@ class Renderer {
 
     void drawPoints()
     {
-        for (unsigned i = 0; i < m_vertices.size(); i++) {
-            vec4f dot = m_trans * m_vertices[i];
+        for (size_t i = 0; i < m_vbuffer->vertices.size; i++) {
+            vec4f dot = m_trans * vec4fp(m_vbuffer->vertices[i]);
             int z = dot.z();
             dot /= dot.w();
             m_canvas.point(dot.x(), dot.y(), z);
@@ -38,9 +61,10 @@ class Renderer {
     void drawLines(bool loop = true)
     {
         Vertex v0, v1, v2;
+        size_t n = m_vbuffer->vertices.size;
 
-        for (unsigned i = 0; i < m_vertices.size(); i++) {
-            vec4f t = m_trans * m_vertices[i];
+        for (unsigned i = 0; i < n; i++) {
+            vec4f t = m_trans * vec4fp(m_vbuffer->vertices[i]);
             vec3f pos = t/t.w();
             pos[2] = t.z();
 
@@ -53,7 +77,7 @@ class Renderer {
             m_canvas.line(v1, v2);
             v1 = v2;
 
-            if (loop && (i+1 == m_vertices.size()))
+            if (loop && (i+1 == n))
                 m_canvas.line(v1, v0);
         }
     }
@@ -62,9 +86,9 @@ class Renderer {
     {
         bool texmap = m_texture
             && !m_wire
-            && m_vertices.size() <= m_texcoords.size();
+            && m_vbuffer->vertices.size <= m_vbuffer->texcoords.size;
 
-        vec4f pos = m_trans * m_vertices[n];
+        vec4f pos = m_trans * vec4fp(m_vbuffer->vertices[n]);
         float z = pos.z();
         pos /= pos.w();
 
@@ -72,8 +96,12 @@ class Renderer {
         vt[1] = roundf(pos.y());
         vt[2] = z;
         if (texmap) {
-            vt[3] = (m_texture->width()-1)*m_texcoords[n].x(); // u
-            vt[4] = (m_texture->height()-1)*m_texcoords[n].y(); // v
+            const float *uv = m_vbuffer->texcoords[n];
+            vt[3] = (m_texture->width()-1)*uv[0]; // u
+            vt[4] = (m_texture->height()-1)*uv[1]; // v
+        } else {
+            vt[3] = 0;
+            vt[4] = 0;
         }
     }
 
@@ -89,12 +117,11 @@ class Renderer {
 
     void drawTriangles()
     {
-        size_t n = m_vertices.size();
+        size_t n = m_vbuffer->vertices.size;
         assert(n % 3 == 0);
+        Vertex vt[3];
 
         for (size_t i = 0; i < n; i += 3) {
-            Vertex vt[3];
-            memset(&vt, 0, sizeof(vt));
             for (int j = 0; j < 3; j++)
                 setVertex(vt[j], i+j);
             drawTriangle(vt);
@@ -103,13 +130,12 @@ class Renderer {
 
     void drawTrianglesIndexed()
     {
-        size_t n = m_indeces.size();
+        size_t n = m_vbuffer->indeces.size;
+        Vertex vt[3];
 
         for (size_t i = 0; i < n; i++) {
-            Vertex vt[3];
-            memset(&vt, 0, sizeof(vt));
             for (int j = 0; j < 3; j++)
-                setVertex(vt[j], m_indeces[i][j]);
+                setVertex(vt[j], m_vbuffer->indeces[i][j]);
             drawTriangle(vt);
         }
     }
@@ -132,38 +158,15 @@ public:
         m_model = m * m_model;
     }
 
-    void vertexPointer(const float pp[][3], int count)
-    {
-        m_vertices.clear();
-        for (int i = 0; i < count; i++)
-            m_vertices.push_back(vec4(pp[i][0], pp[i][1], pp[i][2], 1.f));
-    }
-
-    void texcoordPointer(const float tt[][2], int count)
-    {
-        m_texcoords.clear();
-        for (int i = 0; i < count; i++)
-            m_texcoords.push_back(vec2(tt[i][0], tt[i][1]));
-    }
-
-    void indexPointer(const int ii[][3], int count)
-    {
-        m_indeces.clear();
-        for (int i = 0; i < count; i++)
-            m_indeces.push_back(vec3(ii[i][0], ii[i][1], ii[i][2]));
-    }
-
-    void normalPointer(const float nn[][3], int count)
-    {
-        m_normals.clear();
-        for (int i = 0; i < count; i++)
-            m_indeces.push_back(vec3(nn[i][0], nn[i][1], nn[i][2]));
-    }
-
     void texture(const Pixman *texture)
     {
         m_texture = texture;
         m_canvas.texture(texture);
+    }
+
+    void vertexBuffer(const VertexBuffer *vb)
+    {
+        m_vbuffer = vb;
     }
 
     void wire(bool enable)
@@ -236,51 +239,23 @@ Pixman sdlPixman(SDL_Surface *sdlSurface)
 }
 
 
-void testTriangles(Renderer &r)
-{
-    float pp[][3] = {
-        {-0.5, -0.5, 0},
-        {-0.5, 0.5, 0},
-        {0.5, -0.5, 0},
-
-        {-0.5, 0.5, 0},
-        {0.5, -0.5, 0},
-        {0.5, 0.5, 0},
-    };
-
-    float tt[][2] = {
-        {0.0, 0.0},
-        {0.0, 1.0},
-        {1.0, 0.0},
-
-        {0.0, 1.0},
-        {1.0, 0.0},
-        {1.0, 1.0},
-    };
-
-    r.vertexPointer(pp, 6);
-    r.texcoordPointer(tt, 6);
-    r.render(TRIANGLES);
-}
-
-
 void testBunny(Renderer &r)
 {
 #include "bunny.h"
-    r.vertexPointer(vertices, sizeof(vertices)/sizeof(vertices[0]));
-    r.indexPointer(indeces, sizeof(indeces)/sizeof(indeces[0]));
-    r.normalPointer(normals, sizeof(normals)/sizeof(normals[0]));
+
+    r.vertexBuffer(&vb);
     float s = 7.0f;
     r.transform(translate(0.f, -0.6f, 0.0f) * scale(s, s, s));
     r.render(TRIANGLES_INDEXED);
 }
 
+#define N_ELEMENTS(arr) (sizeof(arr)/sizeof(arr[0]))
+
 void testCube(Renderer &r)
 {
 #include "cube.h"
-    r.vertexPointer(vertices, sizeof(vertices)/sizeof(vertices[0]));
-    r.indexPointer(indeces, sizeof(indeces)/sizeof(indeces[0]));
-    //r.indexPointer(indeces, 1);
+
+    r.vertexBuffer(&vb);
     float s = 0.3f;
     r.transform(rotate(-1.1f, 1.f, 1.f, 0.f));
     r.transform(scale(s, s, s));
@@ -300,10 +275,10 @@ int main(int argc, char **argv)
     Canvas canvas(pscreen);
     Renderer r(canvas);
     //r.texture(&texture);
-    r.wire(true);
+    //r.wire(true);
 
-    //testCube(r);
-    testBunny(r);
+    testCube(r);
+    //testBunny(r);
 
     SDL_Flip(screen);
 
