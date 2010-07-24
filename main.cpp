@@ -18,6 +18,7 @@ class Renderer {
     std::vector<vec4f> m_vertices;
     std::vector<vec2f> m_texcoords;
     std::vector<vec3i> m_indeces;
+    std::vector<vec3f> m_normals;
     const Pixman *m_texture;
     Matrix4f m_viewport;
     Matrix4f m_model;
@@ -152,6 +153,13 @@ public:
             m_indeces.push_back(vec3(ii[i][0], ii[i][1], ii[i][2]));
     }
 
+    void normalPointer(const float nn[][3], int count)
+    {
+        m_normals.clear();
+        for (int i = 0; i < count; i++)
+            m_indeces.push_back(vec3(nn[i][0], nn[i][1], nn[i][2]));
+    }
+
     void texture(const Pixman *texture)
     {
         m_texture = texture;
@@ -261,6 +269,7 @@ void testBunny(Renderer &r)
 #include "bunny.h"
     r.vertexPointer(vertices, sizeof(vertices)/sizeof(vertices[0]));
     r.indexPointer(indeces, sizeof(indeces)/sizeof(indeces[0]));
+    r.normalPointer(normals, sizeof(normals)/sizeof(normals[0]));
     float s = 7.0f;
     r.transform(translate(0.f, -0.6f, 0.0f) * scale(s, s, s));
     r.render(TRIANGLES_INDEXED);
