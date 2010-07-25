@@ -81,5 +81,4 @@ def write_obj(filepath):
     out.close()
 
 
-filename = os.path.splitext(Blender.Get('filename'))[0]
-Blender.Window.FileSelector(write_obj, "Export", '%s.h' % filename)
+Blender.Window.FileSelector(write_obj, "Export a vertex buffer", "*.h")
