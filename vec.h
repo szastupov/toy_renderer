@@ -145,14 +145,7 @@ static vec<3, T> cross(const vec<3, T> &a, const vec<3, T> &b)
 template <size_t N, typename T>
 static T distance(const vec<N, T> &a, const vec<N, T> &b)
 {
-	vec<N, T> c = a-b;
-	return c.length();
-}
-
-template <typename T>
-static T det(const vec<2, T> &a, const vec<2, T> &b)
-{
-	return a.x()*b.y()-b.x()*a.y();
+	return (a-b).length();
 }
 
 typedef vec<2, float> vec2f;
