@@ -6,12 +6,12 @@ LDLIBS += $(SDL_LIBS)
 
 CXXFLAGS += $(CFLAGS)
 
-all: game
+all: demo
 
-game: main.o transform.o canvas.o
+demo: main.o transform.o canvas.o
 	$(LINK.cc) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 clean:
-	rm -f *.o *.d game
+	rm -f *.o *.d demo
 
 -include *.d

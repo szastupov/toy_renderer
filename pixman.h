@@ -86,6 +86,11 @@ public:
         uint8_t *d = colors + y*pitch + x*pf.bpp;
         memcpy(d, &color, pf.bpp);
     }
+
+    void clear()
+    {
+        memset(colors, 0, size);
+    }
 };
 
 #endif

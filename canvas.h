@@ -32,8 +32,10 @@ public:
         , m_texture(NULL)
         , m_color(m_surface.mapRGB(0xFF, 0x00, 0x00))
     {
-        std::fill_n(m_zBuffer, m_zBufferSize, nl32::max());
+        clear();
     }
+
+    void clear();
 
     void setColor(uint8_t r, uint8_t g, uint8_t b);
     void texture(const Pixman *texture)

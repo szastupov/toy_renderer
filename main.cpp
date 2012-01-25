@@ -174,6 +174,13 @@ public:
         m_wire = enable;
     }
 
+    void reset()
+    {
+        m_model.loadIdentity();
+        m_vbuffer = NULL;
+        m_canvas.clear();
+    }
+
     void render(prim_t mode)
     {
         Matrix4f proj;
@@ -239,25 +246,25 @@ Pixman sdlPixman(SDL_Surface *sdlSurface)
 }
 
 
-void testBunny(Renderer &r)
+void testBunny(Renderer &r, float angle)
 {
 #include "bunny.h"
 
     r.vertexBuffer(&vb);
     float s = 7.0f;
-    r.transform(translate(0.f, -0.6f, 0.0f) * scale(s, s, s));
+    r.transform(rotate(angle, 1.f, 1.f, 0.f) * translate(0.f, -0.6f, 0.0f) * scale(s, s, s));
     r.render(TRIANGLES_INDEXED);
 }
 
 #define N_ELEMENTS(arr) (sizeof(arr)/sizeof(arr[0]))
 
-void testCube(Renderer &r)
+void testCube(Renderer &r, float angle)
 {
 #include "cube.h"
 
     r.vertexBuffer(&vb);
     float s = 0.3f;
-    r.transform(rotate(-1.1f, 1.f, 1.f, 0.f));
+    r.transform(rotate(angle, 1.f, 1.f, 0.f));
     r.transform(scale(s, s, s));
     r.render(TRIANGLES_INDEXED);
 }
@@ -275,24 +282,27 @@ int main(int argc, char **argv)
     Canvas canvas(pscreen);
     Renderer r(canvas);
     //r.texture(&texture);
-    //r.wire(true);
-
-    testCube(r);
-    //testBunny(r);
-
-    SDL_Flip(screen);
+    r.wire(true);
+    float angle = 0.0f;
 
     bool run = true;
     while (run) {
         SDL_Event event;
-        SDL_WaitEvent(&event);
-        switch (event.type) {
-        case SDL_QUIT:
-            run = false;
-            break;
-        default:
-            continue;
-        }
+        while (SDL_PollEvent(&event))
+            switch (event.type) {
+            case SDL_QUIT:
+                run = false;
+                break;
+            default:
+                continue;
+            }
+
+        r.reset();
+        //testCube(r, angle);
+        testBunny(r, angle);
+        SDL_Flip(screen);
+
+        angle += 0.01f;
     }
 
     SDL_Quit();

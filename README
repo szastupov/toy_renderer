@@ -1,0 +1,4 @@
+A software renderer I wrote learning computer graphics, circa 2010.
+
+Lighting isn't implemented nor perspective-correct texture mapping.
+For nostalgic purposes only.

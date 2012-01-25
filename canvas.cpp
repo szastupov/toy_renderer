@@ -185,3 +185,9 @@ void Canvas::triangle(const Vertex vs[3])
         scanlineTriangle(vh, DOWN_UP);
     }
 }
+
+void Canvas::clear()
+{
+    m_surface.clear();
+    std::fill_n(m_zBuffer, m_zBufferSize, nl32::max());
+}
